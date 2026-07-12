@@ -1,0 +1,33 @@
+# /etc/systemd/system/fable.service
+# Install:
+#   sudo cp deploy/fable.service /etc/systemd/system/fable.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now fable
+# Logs: journalctl -u fable -f
+
+[Unit]
+Description=Fable Financial Dashboard
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fable
+Group=fable
+WorkingDirectory=/opt/fable/server
+EnvironmentFile=/opt/fable/server/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/fable/data
+# Puppeteer/Chromium needs a writable home for its profile
+Environment=HOME=/opt/fable/data/chromium-home
+
+[Install]
+WantedBy=multi-user.target
