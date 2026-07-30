@@ -1,6 +1,10 @@
-﻿node_modules/
+node_modules/
 .env
 *.db
 *.db-wal
 *.db-shm
 dist/
+
+# Local AI-assistant workflow files, not part of the project
+.claude/
+CLAUDE.md
