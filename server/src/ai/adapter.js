@@ -177,6 +177,4 @@ function createAdapter() {
   return { complete: (args) => geminiComplete(args, config) };
 }
 
-const defaultAdapter = createAdapter();
-
-module.exports = { createAdapter, defaultAdapter };
+module.exports = { createAdapter };
