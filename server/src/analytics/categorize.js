@@ -16,6 +16,7 @@ const CATEGORIES = [
   'cash',
   'other',
   'card_payment',
+  'internal',
 ];
 
 // Starter keyword set for common Israeli merchants (Hebrew + English). Accuracy

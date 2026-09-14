@@ -34,7 +34,7 @@ router.get('/monthly', (req, res) => {
               SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income,
               SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS expense
        FROM transactions
-       WHERE (category IS NULL OR category != 'card_payment')
+       WHERE (category IS NULL OR category NOT IN ('card_payment', 'internal'))
        GROUP BY month
        ORDER BY month`
     )

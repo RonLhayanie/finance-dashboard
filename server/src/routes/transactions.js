@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
     clauses.push('category = ?');
     params.push(category);
   } else {
-    clauses.push("(category IS NULL OR category != 'card_payment')");
+    clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
 
