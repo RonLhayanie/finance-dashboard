@@ -56,9 +56,39 @@ CREATE TABLE IF NOT EXISTS card_mappings (
   account_id INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS merchant_categories (
+  merchant TEXT PRIMARY KEY,
+  category TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS category_labels (
+  slug TEXT PRIMARY KEY,
+  label_he TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_sync_jobs_status ON sync_jobs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_account_merchant ON subscriptions(account_id, merchant);
 
 INSERT OR IGNORE INTO card_mappings (last4, account_id) VALUES ('0659', 17);
+
+INSERT OR IGNORE INTO category_labels (slug, label_he) VALUES
+  ('groceries', 'מכולת'),
+  ('restaurants', 'מסעדות'),
+  ('transport', 'תחבורה'),
+  ('fuel', 'דלק'),
+  ('utilities', 'חשבונות'),
+  ('telecom', 'תקשורת'),
+  ('insurance', 'ביטוח'),
+  ('health', 'בריאות'),
+  ('entertainment', 'בידור'),
+  ('shopping', 'קניות'),
+  ('subscriptions', 'מנויים'),
+  ('salary', 'משכורת'),
+  ('transfers', 'העברות'),
+  ('fees', 'עמלות'),
+  ('cash', 'מזומן'),
+  ('card_payment', 'תשלום כרטיס'),
+  ('internal', 'תנועה פנימית'),
+  ('other', 'אחר');

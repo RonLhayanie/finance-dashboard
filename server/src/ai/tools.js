@@ -14,12 +14,19 @@ function clampLimit(limit, fallback) {
   return Math.min(100, Math.max(1, n));
 }
 
+function getValidCategorySlugs() {
+  return db.prepare('SELECT slug FROM category_labels').all().map((r) => r.slug);
+}
+
 function query_transactions(args = {}) {
   const { from, to, category, minAmount, maxAmount, limit } = args;
   validateDate(from, 'from');
   validateDate(to, 'to');
-  if (category !== undefined && category !== null && !CATEGORIES.includes(category)) {
-    throw new Error(`category must be one of: ${CATEGORIES.join(', ')}`);
+  if (category !== undefined && category !== null) {
+    const validSlugs = getValidCategorySlugs();
+    if (!validSlugs.includes(category)) {
+      throw new Error(`category must be one of: ${validSlugs.join(', ')}`);
+    }
   }
   if (minAmount !== undefined && typeof minAmount !== 'number') {
     throw new Error('minAmount must be a number');

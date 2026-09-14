@@ -1,10 +1,13 @@
 const express = require('express');
 const db = require('../db/db');
-const { CATEGORIES } = require('../analytics/categorize');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const router = express.Router();
+
+function getValidCategorySlugs() {
+  return db.prepare('SELECT slug FROM category_labels').all().map((r) => r.slug);
+}
 
 router.get('/', (req, res) => {
   const { from, to, category } = req.query;
@@ -15,8 +18,11 @@ router.get('/', (req, res) => {
   if (to !== undefined && !DATE_RE.test(to)) {
     return res.status(400).json({ error: 'to must match YYYY-MM-DD' });
   }
-  if (category !== undefined && !CATEGORIES.includes(category)) {
-    return res.status(400).json({ error: `category must be one of: ${CATEGORIES.join(', ')}` });
+  if (category !== undefined) {
+    const validSlugs = getValidCategorySlugs();
+    if (!validSlugs.includes(category)) {
+      return res.status(400).json({ error: `category must be one of: ${validSlugs.join(', ')}` });
+    }
   }
 
   const limit = Math.min(200, Math.max(1, Number.isInteger(Number(req.query.limit)) ? Number(req.query.limit) : 50));

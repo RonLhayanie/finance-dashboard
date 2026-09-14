@@ -3,6 +3,7 @@ const vault = require('../crypto/vault');
 const { waitForOtp, submitOtp, cancelOtp } = require('./otpBridge');
 const { runScrape } = require('./scraper');
 const { categorizeAll } = require('../analytics/categorize');
+const { aiCategorizeUncategorized } = require('../analytics/aiCategorize');
 const { detectSubscriptions } = require('../analytics/subscriptions');
 const { detectAnomalies } = require('../analytics/anomalies');
 const { classifySyncError } = require('./errorCodes');
@@ -65,6 +66,14 @@ async function runSyncJob(jobId, account, scraperFn) {
   // Post-sync analytics hook: categorize new rows, then refresh subscriptions
   // and anomaly flags now that categories are up to date.
   categorizeAll(db);
+  try {
+    const aiSummary = await aiCategorizeUncategorized(db);
+    console.log('AI categorization summary:', aiSummary);
+  } catch (err) {
+    // AI categorization is a best-effort enhancement on top of keyword
+    // categorization, which already ran above - never let it fail the sync.
+    console.error('AI categorization failed, continuing sync:', err.message);
+  }
   detectSubscriptions(db);
   detectAnomalies(db);
 
