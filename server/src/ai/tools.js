@@ -41,6 +41,8 @@ function query_transactions(args = {}) {
   if (category !== undefined && category !== null) {
     clauses.push('category = ?');
     params.push(category);
+  } else {
+    clauses.push("(category IS NULL OR category != 'card_payment')");
   }
   if (minAmount !== undefined) {
     clauses.push('amount >= ?');
@@ -84,6 +86,7 @@ function get_spending_summary(args = {}) {
     clauses.push('date <= ?');
     params.push(to);
   }
+  clauses.push("(category IS NULL OR category != 'card_payment')");
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
 
   const sql = `
@@ -108,7 +111,7 @@ function get_anomalies(args = {}) {
   const { limit } = args;
   return db
     .prepare(
-      'SELECT date, amount, currency, description, category FROM transactions WHERE is_anomaly = 1 ORDER BY date DESC LIMIT ?'
+      "SELECT date, amount, currency, description, category FROM transactions WHERE is_anomaly = 1 AND (category IS NULL OR category != 'card_payment') ORDER BY date DESC LIMIT ?"
     )
     .all(clampLimit(limit, 50));
 }

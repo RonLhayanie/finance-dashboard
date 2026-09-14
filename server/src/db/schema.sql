@@ -51,7 +51,14 @@ CREATE TABLE IF NOT EXISTS sync_jobs (
   finished_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS card_mappings (
+  last4      TEXT PRIMARY KEY,
+  account_id INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_sync_jobs_status ON sync_jobs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_account_merchant ON subscriptions(account_id, merchant);
+
+INSERT OR IGNORE INTO card_mappings (last4, account_id) VALUES ('0659', 17);

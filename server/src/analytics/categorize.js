@@ -15,6 +15,7 @@ const CATEGORIES = [
   'fees',
   'cash',
   'other',
+  'card_payment',
 ];
 
 // Starter keyword set for common Israeli merchants (Hebrew + English). Accuracy
@@ -93,7 +94,16 @@ const RULES = [
   },
 ];
 
-function categorize(description) {
+function categorize(description, db) {
+  const m = (description || '').match(/חיוב לכרטיס ויזה\s*(\d{4})/);
+  if (m && db) {
+    const last4 = m[1];
+    const mapping = db.prepare('SELECT account_id FROM card_mappings WHERE last4 = ?').get(last4);
+    if (mapping) {
+      return 'card_payment';
+    }
+  }
+
   const text = (description || '').toLowerCase();
   for (const rule of RULES) {
     if (rule.keywords.some((kw) => text.includes(kw.toLowerCase()))) {
@@ -109,7 +119,7 @@ function categorizeAll(db) {
 
   const applyAll = db.transaction((rows_) => {
     for (const row of rows_) {
-      update.run(categorize(row.description), row.id);
+      update.run(categorize(row.description, db), row.id);
     }
   });
   applyAll(rows);
