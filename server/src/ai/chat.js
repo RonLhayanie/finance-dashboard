@@ -9,7 +9,13 @@ const SYSTEM_PROMPT =
   'Be efficient: call the minimum number of tools needed to answer the question. ' +
   'For aggregate or "how much did I spend" questions, prefer get_spending_summary ' +
   'over pulling raw rows with query_transactions. As soon as you have enough data ' +
-  'to answer, give your final text answer instead of continuing to explore.';
+  'to answer, give your final text answer instead of continuing to explore. ' +
+  'Formatting: use real markdown, rendered for the user - use "## " headers to ' +
+  'separate sections when listing multiple findings, and **bold** for labels or key ' +
+  'numbers, rather than walls of plain asterisks. When citing a transaction, format ' +
+  'it consistently as "merchant — ₪amount — DD/MM/YYYY", not buried in nested ' +
+  'parentheses. Be concise: prefer a clean short list over long prose. Answer in ' +
+  'the user\'s language (Hebrew).';
 
 const MAX_ITERATIONS = 10;
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getTransactions, getSummary } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
+import { useChatContext } from '../context/ChatContext';
 import { getProviderLabel } from '../utils/providers';
 import { getCategoryLabel } from '../utils/categories';
 import { formatILS } from '../utils/format';
@@ -383,6 +384,7 @@ function ForecastCard({ avgExpense }) {
 
 function InsightCard() {
   const navigate = useNavigate();
+  const { setPendingPrompt } = useChatContext();
   const [insight, setInsight] = useState('');
 
   useEffect(() => {
@@ -427,13 +429,19 @@ function InsightCard() {
       <p className="text-sm text-[var(--color-text)]">{insight}</p>
       <div className="mt-3 flex gap-2">
         <button
-          onClick={() => navigate('/chat')}
+          onClick={() => {
+            setPendingPrompt('פרט לי עוד על התובנה של החודש');
+            navigate('/chat');
+          }}
           className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-strong)]"
         >
           פרט לי עוד
         </button>
         <button
-          onClick={() => navigate('/chat')}
+          onClick={() => {
+            setPendingPrompt('איך אפשר לחסוך על סמך ההוצאות שלי?');
+            navigate('/chat');
+          }}
           className="rounded-lg bg-[var(--color-accent-bg)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-surface-2)]"
         >
           איך אפשר לחסוך?

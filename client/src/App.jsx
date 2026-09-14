@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ChatProvider } from './context/ChatContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Layout from './components/Layout';
@@ -19,7 +20,9 @@ export default function App() {
             path="/*"
             element={
               <ProtectedRoute>
-                <Layout />
+                <ChatProvider>
+                  <Layout />
+                </ChatProvider>
               </ProtectedRoute>
             }
           >
