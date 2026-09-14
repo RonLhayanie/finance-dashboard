@@ -70,7 +70,7 @@ async function runSyncJob(jobId, account, scraperFn) {
 
   db.prepare("UPDATE accounts SET last_sync_at = datetime('now') WHERE id = ?").run(account.id);
   db.prepare(
-    "UPDATE sync_jobs SET status = 'DONE', finished_at = datetime('now'), otp_code = NULL WHERE id = ?"
+    "UPDATE sync_jobs SET status = 'DONE', error = NULL, finished_at = datetime('now'), otp_code = NULL WHERE id = ?"
   ).run(jobId);
 }
 

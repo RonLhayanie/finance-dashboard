@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+@theme {
+  /* surfaces - layered dark */
+  --color-bg: #0f1117;          /* page background, deepest */
+  --color-surface: #171a23;     /* cards */
+  --color-surface-2: #1e222e;   /* raised / hover */
+  --color-border: #262b38;      /* hairline borders */
+
+  /* primary accent - purple (control-center feel) */
+  --color-accent: #7f77dd;
+  --color-accent-strong: #6a61d0;
+  --color-accent-bg: #211f3a;   /* purple tint background */
+
+  /* semantic - income / expense */
+  --color-income: #1baf7a;      /* green */
+  --color-income-bg: #12241d;
+  --color-expense: #e2534a;     /* red */
+  --color-expense-bg: #2a1a1a;
+  --color-warning: #ef9f27;     /* amber - anomalies */
+  --color-warning-bg: #2a2113;
+
+  /* text */
+  --color-text: #e8e9ed;        /* primary */
+  --color-text-muted: #9a9db0;  /* secondary */
+  --color-text-dim: #6b6e80;    /* hints */
+}
+
 body {
-  @apply bg-slate-900 text-slate-100;
+  @apply bg-[var(--color-bg)] text-[var(--color-text)];
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeInUp 0.4s ease both;
 }

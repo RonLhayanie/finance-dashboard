@@ -3,6 +3,7 @@ const { SCRAPERS } = require('israeli-bank-scrapers');
 const db = require('../db/db');
 const vault = require('../crypto/vault');
 const { PROVIDER_TO_COMPANY } = require('../sync/scraper');
+const { startSync } = require('../sync/engine');
 
 const router = express.Router();
 
@@ -46,6 +47,16 @@ router.post('/', (req, res) => {
   const account = db
     .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE id = ?')
     .get(insert.lastInsertRowid);
+
+  // Fire-and-forget: the first sync doubles as the connection validation. If
+  // it can't even be started (e.g. a job is somehow already active for this
+  // brand-new account), don't fail account creation - the user can still
+  // trigger a sync manually from the UI.
+  try {
+    startSync(account.id);
+  } catch (err) {
+    // intentionally ignored - see comment above
+  }
 
   res.status(201).json(account);
 });

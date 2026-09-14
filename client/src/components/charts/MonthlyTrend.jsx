@@ -13,11 +13,11 @@ function CustomTooltip({ active, payload, label }) {
       className="rounded-lg border px-3 py-2 text-sm shadow-xl"
       style={{ backgroundColor: TOOLTIP_BG, borderColor: TOOLTIP_BORDER }}
     >
-      <p className="mb-1 text-xs text-slate-400">{label}</p>
+      <p className="mb-1 text-xs text-[var(--color-text-muted)]">{label}</p>
       {payload.map((entry) => (
-        <p key={entry.dataKey} className="flex items-center gap-2 text-slate-100">
+        <p key={entry.dataKey} className="flex items-center gap-2 text-[var(--color-text)]">
           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-slate-400">{SERIES_LABELS[entry.dataKey]}:</span>
+          <span className="text-[var(--color-text-muted)]">{SERIES_LABELS[entry.dataKey]}:</span>
           <span className="font-semibold">{formatILS(entry.value)}</span>
         </p>
       ))}
@@ -43,10 +43,10 @@ export default function MonthlyTrend() {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-slate-700/50 bg-slate-800 p-5 shadow-lg">
-      <h3 className="mb-4 text-sm font-medium text-slate-300">הכנסות מול הוצאות (12 חודשים אחרונים)</h3>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {!error && data.length === 0 && <p className="text-sm text-slate-400">אין עדיין היסטוריית תנועות.</p>}
+    <div>
+      <h3 className="mb-4 text-sm font-medium text-[var(--color-text-muted)]">הכנסות מול הוצאות (12 חודשים אחרונים)</h3>
+      {error && <p className="text-sm text-[var(--color-expense)]">{error}</p>}
+      {!error && data.length === 0 && <p className="text-sm text-[var(--color-text-dim)]">אין עדיין היסטוריית תנועות.</p>}
       {!error && data.length > 0 && (
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} barGap={2} barCategoryGap="24%">
@@ -61,7 +61,7 @@ export default function MonthlyTrend() {
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }} />
             <Legend
-              formatter={(value) => <span className="text-slate-300">{SERIES_LABELS[value]}</span>}
+              formatter={(value) => <span className="text-[var(--color-text-muted)]">{SERIES_LABELS[value]}</span>}
               iconType="circle"
             />
             <Bar dataKey="income" name="income" fill={INCOME_COLOR} radius={[4, 4, 0, 0]} maxBarSize={24} />
