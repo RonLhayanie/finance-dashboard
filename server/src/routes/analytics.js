@@ -42,6 +42,11 @@ router.get('/monthly', (req, res) => {
   res.json(rows);
 });
 
+router.get('/insight', (req, res) => {
+  const row = db.prepare('SELECT text, generated_at FROM insights ORDER BY id DESC LIMIT 1').get();
+  res.json(row || { text: null });
+});
+
 router.post('/recompute', (req, res) => {
   const categorized = categorizeAll(db);
   const subscriptionsTouched = detectSubscriptions(db);

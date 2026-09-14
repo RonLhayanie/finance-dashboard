@@ -47,6 +47,7 @@ export const getTransactions = (params) => request(`/transactions${toQuery(param
 export const getSummary = (params) => request(`/analytics/summary${toQuery(params)}`);
 export const getAnomalies = (params) => request(`/analytics/anomalies${toQuery(params)}`);
 export const getMonthlyBreakdown = () => request('/analytics/monthly');
+export const getInsight = () => request('/analytics/insight');
 export const recomputeAnalytics = () => request('/analytics/recompute', { method: 'POST' });
 
 // Subscriptions

@@ -6,6 +6,7 @@ const { categorizeAll } = require('../analytics/categorize');
 const { aiCategorizeUncategorized } = require('../analytics/aiCategorize');
 const { detectSubscriptions } = require('../analytics/subscriptions');
 const { detectAnomalies } = require('../analytics/anomalies');
+const { generateInsight } = require('../analytics/generateInsight');
 const { classifySyncError } = require('./errorCodes');
 
 class NotFoundError extends Error {}
@@ -76,6 +77,14 @@ async function runSyncJob(jobId, account, scraperFn) {
   }
   detectSubscriptions(db);
   detectAnomalies(db);
+
+  try {
+    const insight = await generateInsight(db);
+    console.log(insight ? 'Generated insight: ' + insight : 'Insight generation skipped/failed');
+  } catch (err) {
+    // Best-effort, same as AI categorization above - never let it fail the sync.
+    console.error('Insight generation failed, continuing sync:', err.message);
+  }
 
   db.prepare("UPDATE accounts SET last_sync_at = datetime('now') WHERE id = ?").run(account.id);
   db.prepare(

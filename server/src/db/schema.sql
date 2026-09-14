@@ -66,6 +66,12 @@ CREATE TABLE IF NOT EXISTS category_labels (
   label_he TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS insights (
+  id INTEGER PRIMARY KEY,
+  text TEXT NOT NULL,
+  generated_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_sync_jobs_status ON sync_jobs(status);

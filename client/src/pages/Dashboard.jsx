@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getTransactions, getSummary } from '../api/client';
+import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getTransactions, getSummary, getInsight } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
 import { useChatContext } from '../context/ChatContext';
 import { getProviderLabel } from '../utils/providers';
@@ -386,24 +386,44 @@ function InsightCard() {
   const navigate = useNavigate();
   const { setPendingPrompt } = useChatContext();
   const [insight, setInsight] = useState('');
+  const [generatedAt, setGeneratedAt] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    const now = new Date();
-    const from = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
-    const to = toISODate(now);
-    getSummary({ from, to, groupBy: 'category' })
-      .then((rows) => {
+
+    function fallbackToClientComputed() {
+      const now = new Date();
+      const from = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+      const to = toISODate(now);
+      getSummary({ from, to, groupBy: 'category' })
+        .then((rows) => {
+          if (cancelled) return;
+          const top = rows.filter((r) => r.total < 0).sort((a, b) => a.total - b.total)[0];
+          if (top) {
+            setInsight(`הקטגוריה הגדולה ביותר החודש היא ${getCategoryLabel(top.group_key)} עם ${formatILS(Math.abs(top.total))}.`);
+          } else {
+            setInsight('התובנה תתעדכן בסנכרון הבא.');
+          }
+        })
+        .catch(() => {});
+    }
+
+    getInsight()
+      .then((data) => {
         if (cancelled) return;
-        const top = rows.filter((r) => r.total < 0).sort((a, b) => a.total - b.total)[0];
-        // TODO: replace with real AI-generated insight from backend
-        if (top) {
-          setInsight(`הקטגוריה הגדולה ביותר החודש היא ${getCategoryLabel(top.group_key)} עם ${formatILS(Math.abs(top.total))}.`);
+        if (data && data.text) {
+          setInsight(data.text);
+          setGeneratedAt(data.generated_at);
         } else {
-          setInsight('אין עדיין מספיק נתונים החודש כדי לזהות תובנה.');
+          // No AI insight persisted yet (no sync has completed with it) - fall
+          // back to a simple client-side computation so the card is never empty.
+          fallbackToClientComputed();
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) fallbackToClientComputed();
+      });
+
     return () => {
       cancelled = true;
     };
@@ -424,7 +444,9 @@ function InsightCard() {
           </div>
           <span className="text-sm font-medium text-[var(--color-accent)]">תובנת AI</span>
         </div>
-        <span className="text-xs text-[var(--color-text-dim)]">עודכן היום</span>
+        <span className="text-xs text-[var(--color-text-dim)]">
+          {generatedAt ? `עודכן ${formatRelativeDays(generatedAt)}` : ''}
+        </span>
       </div>
       <p className="text-sm text-[var(--color-text)]">{insight}</p>
       <div className="mt-3 flex gap-2">
