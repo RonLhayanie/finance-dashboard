@@ -17,12 +17,33 @@ function twelveMonthsAgo() {
 }
 
 function externalIdFor(txn) {
+  // Native identifier (Asmachta) is stable and authoritative when the bank
+  // supplies one - always prefer it over the fallback hash below.
   if (txn.identifier !== undefined && txn.identifier !== null && txn.identifier !== '') {
     return String(txn.identifier);
   }
+  // Fallback hash, used when the scraper gives no native identifier. Every
+  // field below is included because it can genuinely differ between two
+  // distinct same-day, same-amount, same-merchant transactions:
+  //   - processedDate: settlement date, separate from the transaction date
+  //   - originalCurrency: disambiguates a foreign-currency charge from a
+  //     same-amount ILS charge
+  //   - memo: free-text note the bank/cardholder attaches, often the only
+  //     thing distinguishing two otherwise-identical charges
+  //   - type: 'normal' vs 'installments'
+  //   - installments.number: which installment, for installment purchases
+  // Every field here is STABLE across re-syncs (unchanged between scrapes of
+  // the same transaction). Do not add anything volatile (e.g. a running
+  // index or a value that can shift on re-fetch) - that would change the
+  // hash on the next sync and create a duplicate row instead of matching
+  // the existing one, which is the opposite failure from what this fixes.
   return crypto
     .createHash('sha256')
-    .update(`${txn.date}|${txn.chargedAmount}|${txn.description}`)
+    .update(
+      `${txn.date}|${txn.processedDate ?? ''}|${txn.chargedAmount}|` +
+        `${txn.originalCurrency ?? ''}|${txn.description}|${txn.memo ?? ''}|` +
+        `${txn.type ?? ''}|${txn.installments?.number ?? ''}`
+    )
     .digest('hex');
 }
 
