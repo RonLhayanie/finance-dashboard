@@ -9,8 +9,8 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   const accounts = db
-    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts ORDER BY id')
-    .all();
+    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE user_id = ? ORDER BY id')
+    .all(req.userId);
   res.json(accounts);
 });
 
@@ -39,14 +39,14 @@ router.post('/', (req, res) => {
 
   const insert = db
     .prepare(
-      `INSERT INTO accounts (provider, display_name, credentials_encrypted, credentials_iv, credentials_tag)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO accounts (user_id, provider, display_name, credentials_encrypted, credentials_iv, credentials_tag)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(provider, displayName.trim(), encrypted, iv, tag);
+    .run(req.userId, provider, displayName.trim(), encrypted, iv, tag);
 
   const account = db
-    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE id = ?')
-    .get(insert.lastInsertRowid);
+    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE id = ? AND user_id = ?')
+    .get(insert.lastInsertRowid, req.userId);
 
   // Fire-and-forget: the first sync doubles as the connection validation. If
   // it can't even be started (e.g. a job is somehow already active for this
@@ -67,12 +67,15 @@ router.delete('/:id', (req, res) => {
     return res.status(404).json({ error: `Account not found: ${req.params.id}` });
   }
 
-  const account = db.prepare('SELECT id FROM accounts WHERE id = ?').get(id);
+  // Ownership check first: an account that exists but belongs to another
+  // user must 404 exactly like one that doesn't exist at all - never 403,
+  // which would confirm the id is in use by someone else.
+  const account = db.prepare('SELECT id FROM accounts WHERE id = ? AND user_id = ?').get(id, req.userId);
   if (!account) {
     return res.status(404).json({ error: `Account not found: ${id}` });
   }
 
-  db.prepare('DELETE FROM accounts WHERE id = ?').run(id);
+  db.prepare('DELETE FROM accounts WHERE id = ? AND user_id = ?').run(id, req.userId);
   res.json({ ok: true });
 });
 

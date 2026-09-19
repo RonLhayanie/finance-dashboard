@@ -18,8 +18,21 @@ function getValidCategorySlugs() {
   return db.prepare('SELECT slug FROM category_labels').all().map((r) => r.slug);
 }
 
+// Every function below that touches transactions/subscriptions requires
+// userId and scopes its query by it. userId is never taken from an LLM tool
+// call's arguments (see ai/chat.js, which always overrides it with the
+// authenticated request's own req.userId) - this check is a backstop so a
+// scoping bug elsewhere fails loudly instead of silently returning
+// cross-user data.
+function requireUserId(userId) {
+  if (!Number.isInteger(userId)) {
+    throw new Error('userId is required');
+  }
+}
+
 function query_transactions(args = {}) {
-  const { from, to, category, minAmount, maxAmount, limit } = args;
+  const { userId, from, to, category, minAmount, maxAmount, limit } = args;
+  requireUserId(userId);
   validateDate(from, 'from');
   validateDate(to, 'to');
   if (category !== undefined && category !== null) {
@@ -35,8 +48,8 @@ function query_transactions(args = {}) {
     throw new Error('maxAmount must be a number');
   }
 
-  const clauses = [];
-  const params = [];
+  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
+  const params = [userId];
   if (from !== undefined && from !== null) {
     clauses.push('date >= ?');
     params.push(from);
@@ -60,7 +73,7 @@ function query_transactions(args = {}) {
     params.push(maxAmount);
   }
 
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const where = `WHERE ${clauses.join(' AND ')}`;
   const sql = `SELECT date, amount, currency, description, category FROM transactions ${where} ORDER BY date DESC LIMIT ?`;
   params.push(clampLimit(limit, 50));
 
@@ -75,7 +88,8 @@ const GROUP_BY_SQL = {
 };
 
 function get_spending_summary(args = {}) {
-  const { from, to, groupBy } = args;
+  const { userId, from, to, groupBy } = args;
+  requireUserId(userId);
   validateDate(from, 'from');
   validateDate(to, 'to');
   if (!Object.prototype.hasOwnProperty.call(GROUP_BY_SQL, groupBy)) {
@@ -83,8 +97,8 @@ function get_spending_summary(args = {}) {
   }
   const groupExpr = GROUP_BY_SQL[groupBy];
 
-  const clauses = [];
-  const params = [];
+  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
+  const params = [userId];
   if (from !== undefined && from !== null) {
     clauses.push('date >= ?');
     params.push(from);
@@ -94,7 +108,7 @@ function get_spending_summary(args = {}) {
     params.push(to);
   }
   clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const where = `WHERE ${clauses.join(' AND ')}`;
 
   const sql = `
     SELECT ${groupExpr} AS group_key, SUM(amount) AS total, COUNT(*) AS count
@@ -106,21 +120,31 @@ function get_spending_summary(args = {}) {
   return db.prepare(sql).all(...params);
 }
 
-function get_subscriptions() {
+function get_subscriptions(args = {}) {
+  const { userId } = args;
+  requireUserId(userId);
   return db
     .prepare(
-      'SELECT account_id, merchant, amount, frequency, last_charged, status FROM subscriptions ORDER BY status, merchant'
+      `SELECT account_id, merchant, amount, frequency, last_charged, status
+       FROM subscriptions
+       WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ?)
+       ORDER BY status, merchant`
     )
-    .all();
+    .all(userId);
 }
 
 function get_anomalies(args = {}) {
-  const { limit } = args;
+  const { userId, limit } = args;
+  requireUserId(userId);
   return db
     .prepare(
-      "SELECT date, amount, currency, description, category FROM transactions WHERE is_anomaly = 1 AND (category IS NULL OR category NOT IN ('card_payment', 'internal')) ORDER BY date DESC LIMIT ?"
+      `SELECT date, amount, currency, description, category FROM transactions
+       WHERE is_anomaly = 1
+         AND account_id IN (SELECT id FROM accounts WHERE user_id = ?)
+         AND (category IS NULL OR category NOT IN ('card_payment', 'internal'))
+       ORDER BY date DESC LIMIT ?`
     )
-    .all(clampLimit(limit, 50));
+    .all(userId, clampLimit(limit, 50));
 }
 
 function list_categories() {

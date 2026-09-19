@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
   const capped = messages.slice(-40);
 
   try {
-    const result = await chat({ messages: capped });
+    const result = await chat({ messages: capped, userId: req.userId });
     return res.json(result);
   } catch (err) {
     console.error('Chat adapter failure:', err.message);

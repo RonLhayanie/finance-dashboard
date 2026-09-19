@@ -36,7 +36,7 @@ function toolSchemas() {
   return TOOLS.map(({ name, description, parameters }) => ({ name, description, parameters }));
 }
 
-async function chat({ messages, adapter }) {
+async function chat({ messages, adapter, userId }) {
   const toolCallsMade = [];
   let currentMessages = [...messages];
   let lastText = '';
@@ -73,7 +73,11 @@ async function chat({ messages, adapter }) {
         output = { error: `Unknown tool: ${call.name}` };
       } else {
         try {
-          output = tool.execute(call.arguments || {});
+          // userId is always the authenticated caller's own id, applied
+          // last so it overrides anything the model put in call.arguments -
+          // the model never sees userId in a tool's parameter schema, but
+          // this override means even a spoofed value can't get through.
+          output = tool.execute({ ...(call.arguments || {}), userId });
         } catch (err) {
           output = { error: err.message };
         }

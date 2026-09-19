@@ -28,8 +28,8 @@ router.get('/', (req, res) => {
   const limit = Math.min(200, Math.max(1, Number.isInteger(Number(req.query.limit)) ? Number(req.query.limit) : 50));
   const offset = Math.max(0, Number.isInteger(Number(req.query.offset)) ? Number(req.query.offset) : 0);
 
-  const clauses = [];
-  const params = [];
+  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
+  const params = [req.userId];
   if (from !== undefined) {
     clauses.push('date >= ?');
     params.push(from);
@@ -44,7 +44,7 @@ router.get('/', (req, res) => {
   } else {
     clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
   }
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const where = `WHERE ${clauses.join(' AND ')}`;
 
   const rows = db
     .prepare(

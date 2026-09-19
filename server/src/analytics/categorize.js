@@ -114,8 +114,18 @@ function categorize(description, db) {
   return 'other';
 }
 
-function categorizeAll(db) {
-  const rows = db.prepare('SELECT id, description FROM transactions WHERE category IS NULL').all();
+// accountIds, when given, scopes categorization to that set of accounts
+// (used by the per-user /recompute route). Omitted entirely, it processes
+// every account - the existing behavior the post-sync hook in sync/engine.js
+// still relies on.
+function categorizeAll(db, accountIds) {
+  const scoped = Array.isArray(accountIds);
+  if (scoped && accountIds.length === 0) return 0;
+
+  const where = scoped
+    ? `WHERE category IS NULL AND account_id IN (${accountIds.map(() => '?').join(',')})`
+    : 'WHERE category IS NULL';
+  const rows = db.prepare(`SELECT id, description FROM transactions ${where}`).all(...(scoped ? accountIds : []));
   const update = db.prepare('UPDATE transactions SET category = ? WHERE id = ?');
 
   const applyAll = db.transaction((rows_) => {

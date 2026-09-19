@@ -27,15 +27,23 @@ function classifyFrequency(gaps) {
 // Charges are stored as negative amounts (the scraper passes through the
 // library's chargedAmount, which is negative for debits, positive for credits).
 // Only negative amounts represent real recurring charges.
-function detectSubscriptions(db) {
+// accountIds, when given, scopes both detection and status maintenance to
+// that set of accounts (used by the per-user /recompute route). Omitted
+// entirely, it processes every account - the existing behavior the
+// post-sync hook in sync/engine.js still relies on.
+function detectSubscriptions(db, accountIds) {
+  const scoped = Array.isArray(accountIds);
+  if (scoped && accountIds.length === 0) return 0;
+  const placeholders = scoped ? accountIds.map(() => '?').join(',') : null;
+
   const rows = db
     .prepare(
       `SELECT id, account_id, date, amount, description
        FROM transactions
-       WHERE amount < 0
+       WHERE amount < 0${scoped ? ` AND account_id IN (${placeholders})` : ''}
        ORDER BY account_id, date ASC`
     )
-    .all();
+    .all(...(scoped ? accountIds : []));
 
   const groups = new Map();
   for (const row of rows) {
@@ -86,9 +94,14 @@ function detectSubscriptions(db) {
       touched += 1;
     }
 
-    // Status maintenance runs over every existing subscription row, not just
-    // groups matched above, since a merchant may have stopped charging entirely.
-    const existing = db.prepare('SELECT id, frequency, last_charged FROM subscriptions').all();
+    // Status maintenance runs over every existing subscription row in scope,
+    // not just groups matched above, since a merchant may have stopped
+    // charging entirely.
+    const existing = db
+      .prepare(
+        `SELECT id, frequency, last_charged FROM subscriptions${scoped ? ` WHERE account_id IN (${placeholders})` : ''}`
+      )
+      .all(...(scoped ? accountIds : []));
     const setStatus = db.prepare('UPDATE subscriptions SET status = ? WHERE id = ?');
     const now = new Date().toISOString();
     for (const sub of existing) {
