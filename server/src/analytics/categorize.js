@@ -114,18 +114,17 @@ function categorize(description, db) {
   return 'other';
 }
 
-// accountIds, when given, scopes categorization to that set of accounts
-// (used by the per-user /recompute route). Omitted entirely, it processes
-// every account - the existing behavior the post-sync hook in sync/engine.js
-// still relies on.
-function categorizeAll(db, accountIds) {
-  const scoped = Array.isArray(accountIds);
-  if (scoped && accountIds.length === 0) return 0;
-
+// userId, when given, scopes categorization to that user's own accounts
+// (used by the per-user post-sync hook and /recompute route). Omitted
+// entirely, it processes every account across every user - relied on by the
+// nightly cron, which scopes per-account itself by calling this once per
+// synced account (see sync/engine.js).
+function categorizeAll(db, userId) {
+  const scoped = Number.isInteger(userId);
   const where = scoped
-    ? `WHERE category IS NULL AND account_id IN (${accountIds.map(() => '?').join(',')})`
+    ? 'WHERE category IS NULL AND account_id IN (SELECT id FROM accounts WHERE user_id = ?)'
     : 'WHERE category IS NULL';
-  const rows = db.prepare(`SELECT id, description FROM transactions ${where}`).all(...(scoped ? accountIds : []));
+  const rows = db.prepare(`SELECT id, description FROM transactions ${where}`).all(...(scoped ? [userId] : []));
   const update = db.prepare('UPDATE transactions SET category = ? WHERE id = ?');
 
   const applyAll = db.transaction((rows_) => {

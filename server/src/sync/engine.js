@@ -65,9 +65,15 @@ async function runSyncJob(jobId, account, scraperFn) {
   insertAll(result.accounts || []);
 
   // Post-sync analytics hook: categorize new rows, then refresh subscriptions
-  // and anomaly flags now that categories are up to date.
-  categorizeAll(db);
+  // and anomaly flags now that categories are up to date. Scoped to this
+  // account's own owner (account.user_id) so one user's sync never touches
+  // another user's categorization/anomaly/subscription data.
+  categorizeAll(db, account.user_id);
   try {
+    // Not scoped by user: it works off transaction description text only
+    // (same merchant = same category for anyone), and shares its cache
+    // (merchant_categories) and label set (category_labels) globally by
+    // design, same as the keyword rules in categorize.js.
     const aiSummary = await aiCategorizeUncategorized(db);
     console.log('AI categorization summary:', aiSummary);
   } catch (err) {
@@ -75,11 +81,11 @@ async function runSyncJob(jobId, account, scraperFn) {
     // categorization, which already ran above - never let it fail the sync.
     console.error('AI categorization failed, continuing sync:', err.message);
   }
-  detectSubscriptions(db);
-  detectAnomalies(db);
+  detectSubscriptions(db, account.user_id);
+  detectAnomalies(db, account.user_id);
 
   try {
-    const insight = await generateInsight(db);
+    const insight = await generateInsight(db, account.user_id);
     console.log(insight ? 'Generated insight: ' + insight : 'Insight generation skipped/failed');
   } catch (err) {
     // Best-effort, same as AI categorization above - never let it fail the sync.

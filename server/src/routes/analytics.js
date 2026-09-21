@@ -43,24 +43,17 @@ router.get('/monthly', (req, res) => {
   res.json(rows);
 });
 
-// TODO(multi-tenancy): the insights table has no account/user linkage - it
-// holds a single global row generated from ALL users' transactions
-// (analytics/generateInsight.js), so this endpoint currently returns the
-// same insight to every user regardless of whose spending it describes.
-// Fixing it needs a schema change (insight ownership) and a change to how/
-// when generateInsight runs post-sync, which is out of this pass's
-// authorized scope (only accounts.user_id was authorized). Flagged here
-// deliberately rather than left silently unscoped.
 router.get('/insight', (req, res) => {
-  const row = db.prepare('SELECT text, generated_at FROM insights ORDER BY id DESC LIMIT 1').get();
+  const row = db
+    .prepare('SELECT text, generated_at FROM insights WHERE user_id = ? ORDER BY id DESC LIMIT 1')
+    .get(req.userId);
   res.json(row || { text: null });
 });
 
 router.post('/recompute', (req, res) => {
-  const accountIds = db.prepare('SELECT id FROM accounts WHERE user_id = ?').all(req.userId).map((r) => r.id);
-  const categorized = categorizeAll(db, accountIds);
-  const subscriptionsTouched = detectSubscriptions(db, accountIds);
-  const anomaliesFlagged = detectAnomalies(db, accountIds);
+  const categorized = categorizeAll(db, req.userId);
+  const subscriptionsTouched = detectSubscriptions(db, req.userId);
+  const anomaliesFlagged = detectAnomalies(db, req.userId);
   res.json({ categorized, subscriptionsTouched, anomaliesFlagged });
 });
 

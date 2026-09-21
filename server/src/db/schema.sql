@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS category_labels (
 
 CREATE TABLE IF NOT EXISTS insights (
   id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   generated_at TEXT NOT NULL
 );

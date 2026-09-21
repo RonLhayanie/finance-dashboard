@@ -27,23 +27,26 @@ function classifyFrequency(gaps) {
 // Charges are stored as negative amounts (the scraper passes through the
 // library's chargedAmount, which is negative for debits, positive for credits).
 // Only negative amounts represent real recurring charges.
-// accountIds, when given, scopes both detection and status maintenance to
-// that set of accounts (used by the per-user /recompute route). Omitted
-// entirely, it processes every account - the existing behavior the
-// post-sync hook in sync/engine.js still relies on.
-function detectSubscriptions(db, accountIds) {
-  const scoped = Array.isArray(accountIds);
-  if (scoped && accountIds.length === 0) return 0;
-  const placeholders = scoped ? accountIds.map(() => '?').join(',') : null;
+// userId, when given, scopes both detection and status maintenance to that
+// user's own accounts (used by the per-user post-sync hook and /recompute
+// route) - recurrence (the gap/median grouping below) is computed only from
+// rows already limited to that user's own accounts, so one user's charges
+// never feed another user's subscription detection. Omitted entirely, it
+// processes every account across every user - relied on by the nightly
+// cron, which scopes per-account itself by calling this once per synced
+// account (see sync/engine.js).
+function detectSubscriptions(db, userId) {
+  const scoped = Number.isInteger(userId);
+  const acctFilter = scoped ? ' AND account_id IN (SELECT id FROM accounts WHERE user_id = ?)' : '';
 
   const rows = db
     .prepare(
       `SELECT id, account_id, date, amount, description
        FROM transactions
-       WHERE amount < 0${scoped ? ` AND account_id IN (${placeholders})` : ''}
+       WHERE amount < 0${acctFilter}
        ORDER BY account_id, date ASC`
     )
-    .all(...(scoped ? accountIds : []));
+    .all(...(scoped ? [userId] : []));
 
   const groups = new Map();
   for (const row of rows) {
@@ -99,9 +102,9 @@ function detectSubscriptions(db, accountIds) {
     // charging entirely.
     const existing = db
       .prepare(
-        `SELECT id, frequency, last_charged FROM subscriptions${scoped ? ` WHERE account_id IN (${placeholders})` : ''}`
+        `SELECT id, frequency, last_charged FROM subscriptions${scoped ? ` WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ?)` : ''}`
       )
-      .all(...(scoped ? accountIds : []));
+      .all(...(scoped ? [userId] : []));
     const setStatus = db.prepare('UPDATE subscriptions SET status = ? WHERE id = ?');
     const now = new Date().toISOString();
     for (const sub of existing) {
