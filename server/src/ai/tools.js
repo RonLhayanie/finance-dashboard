@@ -30,6 +30,18 @@ function requireUserId(userId) {
   }
 }
 
+// accountId is optional and additive on top of the userId scope above, never
+// a replacement for it - the base clause is always
+// `account_id IN (SELECT id FROM accounts WHERE user_id = ?)`, and this just
+// ANDs a further `account_id = ?` restriction. An accountId that isn't one
+// of the caller's own accounts is never a separate error case: it's already
+// excluded by the userId subquery, so the combined result is just empty.
+function validateAccountId(accountId) {
+  if (accountId !== undefined && accountId !== null && !Number.isInteger(accountId)) {
+    throw new Error('accountId must be an integer');
+  }
+}
+
 function query_transactions(args = {}) {
   const { userId, from, to, category, minAmount, maxAmount, limit } = args;
   requireUserId(userId);
@@ -88,8 +100,9 @@ const GROUP_BY_SQL = {
 };
 
 function get_spending_summary(args = {}) {
-  const { userId, from, to, groupBy } = args;
+  const { userId, from, to, groupBy, accountId } = args;
   requireUserId(userId);
+  validateAccountId(accountId);
   validateDate(from, 'from');
   validateDate(to, 'to');
   if (!Object.prototype.hasOwnProperty.call(GROUP_BY_SQL, groupBy)) {
@@ -99,6 +112,10 @@ function get_spending_summary(args = {}) {
 
   const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
   const params = [userId];
+  if (accountId !== undefined && accountId !== null) {
+    clauses.push('account_id = ?');
+    params.push(accountId);
+  }
   if (from !== undefined && from !== null) {
     clauses.push('date >= ?');
     params.push(from);
@@ -134,17 +151,34 @@ function get_subscriptions(args = {}) {
 }
 
 function get_anomalies(args = {}) {
-  const { userId, limit } = args;
+  const { userId, from, to, accountId, limit } = args;
   requireUserId(userId);
-  return db
-    .prepare(
-      `SELECT date, amount, currency, description, category FROM transactions
-       WHERE is_anomaly = 1
-         AND account_id IN (SELECT id FROM accounts WHERE user_id = ?)
-         AND (category IS NULL OR category NOT IN ('card_payment', 'internal'))
-       ORDER BY date DESC LIMIT ?`
-    )
-    .all(userId, clampLimit(limit, 50));
+  validateAccountId(accountId);
+  validateDate(from, 'from');
+  validateDate(to, 'to');
+
+  const clauses = [
+    'is_anomaly = 1',
+    'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
+    "(category IS NULL OR category NOT IN ('card_payment', 'internal'))",
+  ];
+  const params = [userId];
+  if (accountId !== undefined && accountId !== null) {
+    clauses.push('account_id = ?');
+    params.push(accountId);
+  }
+  if (from !== undefined && from !== null) {
+    clauses.push('date >= ?');
+    params.push(from);
+  }
+  if (to !== undefined && to !== null) {
+    clauses.push('date <= ?');
+    params.push(to);
+  }
+
+  const sql = `SELECT date, amount, currency, description, category FROM transactions WHERE ${clauses.join(' AND ')} ORDER BY date DESC LIMIT ?`;
+  params.push(clampLimit(limit, 50));
+  return db.prepare(sql).all(...params);
 }
 
 function list_categories() {
@@ -193,7 +227,11 @@ const TOOLS = [
     description: 'List transactions flagged as anomalies, newest first.',
     parameters: {
       type: 'object',
-      properties: { limit: { type: 'integer' } },
+      properties: {
+        from: { type: 'string', description: 'Start date YYYY-MM-DD' },
+        to: { type: 'string', description: 'End date YYYY-MM-DD' },
+        limit: { type: 'integer' },
+      },
     },
     execute: get_anomalies,
   },
