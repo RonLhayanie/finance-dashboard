@@ -474,8 +474,9 @@ function InsightCard() {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [rangeKey, setRangeKey] = useState('month');
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState(null);
   const [error, setError] = useState('');
   const [resettingId, setResettingId] = useState(null);
   const [monthly, setMonthly] = useState([]);
@@ -504,6 +505,32 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, []);
+
+  if (accounts === null) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)]" />
+      </div>
+    );
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <div className="animate-in flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <BuildingBankIcon width={48} height={48} style={{ color: 'var(--color-accent)' }} />
+        <h2 className="text-3xl font-semibold tracking-tight text-[var(--color-text)]">ברוך הבא ל-Ledgerly</h2>
+        <p className="max-w-sm text-sm text-[var(--color-text-muted)]">
+          עדיין אין חשבון מחובר. חבר את החשבון הראשון שלך כדי להתחיל לראות את התמונה הפיננסית שלך.
+        </p>
+        <button
+          onClick={() => navigate('/accounts')}
+          className="mt-2 cursor-pointer rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-accent-strong)]"
+        >
+          חבר חשבון
+        </button>
+      </div>
+    );
+  }
 
   function isAccountActive(accountId) {
     return jobs.some((j) => j.account_id === accountId && (j.status === 'RUNNING' || j.status === 'NEEDS_OTP'));
@@ -596,11 +623,11 @@ export default function Dashboard() {
       >
         <h3 className="mb-4 text-sm font-medium text-[var(--color-text-muted)]">חשבונות</h3>
         {error && <p className="text-sm" style={{ color: 'var(--color-expense)' }}>{error}</p>}
-        {accounts.length === 0 ? (
+        {accounts?.length === 0 ? (
           <p className="text-sm text-[var(--color-text-dim)]">אין עדיין חשבונות. הוסף חשבון בעמוד החשבונות.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {accounts.map((a) => {
+            {accounts?.map((a) => {
               const Icon = BANK_PROVIDERS.includes(a.provider) ? BuildingBankIcon : CreditCardIcon;
               const status = getAccountStatus(a);
               return (
