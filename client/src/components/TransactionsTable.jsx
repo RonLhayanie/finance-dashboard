@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getTransactions } from '../api/client';
 import { formatILS } from '../utils/format';
 import { CATEGORIES, getCategoryLabel } from '../utils/categories';
@@ -6,7 +7,13 @@ import { CATEGORIES, getCategoryLabel } from '../utils/categories';
 const PAGE_SIZE = 20;
 
 export default function TransactionsTable() {
-  const [category, setCategory] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // category lives in the URL (?category=), not local state - lets other
+  // pages deep-link into a pre-filtered view (e.g. the spending donut).
+  // An unrecognized/stale value falls back to "all", same guard pattern
+  // used for the dashboard's account filter.
+  const rawCategoryParam = searchParams.get('category') || '';
+  const category = rawCategoryParam === '' || CATEGORIES.includes(rawCategoryParam) ? rawCategoryParam : '';
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [offset, setOffset] = useState(0);
@@ -41,12 +48,26 @@ export default function TransactionsTable() {
     };
   }
 
+  function handleCategoryChange(e) {
+    const value = e.target.value;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) {
+        next.set('category', value);
+      } else {
+        next.delete('category');
+      }
+      return next;
+    });
+    setOffset(0);
+  }
+
   return (
     <div className="rounded-xl bg-slate-800 p-4">
       <div className="mb-4 flex flex-wrap gap-3">
         <select
           value={category}
-          onChange={handleFilterChange(setCategory)}
+          onChange={handleCategoryChange}
           className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm text-slate-100"
         >
           <option value="">כל הקטגוריות</option>

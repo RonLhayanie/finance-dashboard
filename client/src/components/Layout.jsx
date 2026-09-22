@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { SyncStatusProvider, useSyncStatusContext } from '../context/SyncStatusContext';
 import { useAuth } from '../context/AuthContext';
 import OtpModal from './OtpModal';
@@ -139,6 +139,18 @@ function OtpGate() {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  // Remembers the query string last seen while on the dashboard route, so
+  // the sidebar link restores its filters (?account=, ?month=) even after
+  // navigating away to another page and back - location.search alone only
+  // reflects whichever page is currently active, not the dashboard's.
+  const [dashboardSearch, setDashboardSearch] = useState(location.pathname === '/' ? location.search : '');
+
+  useEffect(() => {
+    if (location.pathname === '/') {
+      setDashboardSearch(location.search);
+    }
+  }, [location.pathname, location.search]);
 
   return (
     <SyncStatusProvider>
@@ -154,10 +166,13 @@ export default function Layout() {
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = NAV_ICONS[item.to];
+              // Only the dashboard link needs its query string preserved -
+              // other pages don't carry filter state in the URL.
+              const to = item.to === '/' ? { pathname: '/', search: dashboardSearch } : item.to;
               return (
                 <NavLink
                   key={item.to}
-                  to={item.to}
+                  to={to}
                   end={item.end}
                   className={({ isActive }) =>
                     `flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${

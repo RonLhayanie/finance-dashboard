@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getSummary } from '../../api/client';
 import { formatILS } from '../../utils/format';
@@ -29,13 +30,18 @@ function CustomTooltip({ active, payload }) {
   );
 }
 
-export default function SpendingByCategory({ from, to }) {
+export default function SpendingByCategory({ from, to, accountId }) {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
 
+  function goToCategory(slug) {
+    if (slug) navigate(`/transactions?category=${slug}`);
+  }
+
   useEffect(() => {
     let cancelled = false;
-    getSummary({ from, to, groupBy: 'category' })
+    getSummary({ from, to, groupBy: 'category', account_id: accountId })
       .then((rows) => {
         if (cancelled) return;
         const spend = rows
@@ -51,8 +57,12 @@ export default function SpendingByCategory({ from, to }) {
           name: getCategoryLabel(r.key),
           value: r.value,
           color: DONUT_PALETTE[i % DONUT_PALETTE.length],
+          slug: r.key,
         }));
         if (otherTotal > 0) {
+          // "אחר" aggregates several long-tail categories beyond MAX_SLICES -
+          // there's no single category slug it can deep-link to, so it has
+          // no slug and stays non-clickable below.
           chartData.push({ name: 'אחר', value: otherTotal, color: OTHER_GRAY });
         }
         setData(chartData);
@@ -61,7 +71,7 @@ export default function SpendingByCategory({ from, to }) {
     return () => {
       cancelled = true;
     };
-  }, [from, to]);
+  }, [from, to, accountId]);
 
   return (
     <div>
@@ -73,14 +83,30 @@ export default function SpendingByCategory({ from, to }) {
           <PieChart>
             <Pie data={data} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2} stroke="none">
               {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
+                <Cell
+                  key={entry.name}
+                  fill={entry.color}
+                  cursor={entry.slug ? 'pointer' : 'default'}
+                  onClick={() => goToCategory(entry.slug)}
+                />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
             <Legend
               layout="horizontal"
               verticalAlign="bottom"
-              formatter={(value) => <span className="text-[var(--color-text-muted)]">{value}</span>}
+              onClick={(entry) => goToCategory(entry?.payload?.slug)}
+              formatter={(value, entry) => (
+                <span
+                  className={
+                    entry?.payload?.slug
+                      ? 'cursor-pointer text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]'
+                      : 'text-[var(--color-text-muted)]'
+                  }
+                >
+                  {value}
+                </span>
+              )}
               iconType="circle"
             />
           </PieChart>

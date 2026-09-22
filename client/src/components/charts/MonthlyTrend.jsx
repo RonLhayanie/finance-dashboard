@@ -25,13 +25,13 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export default function MonthlyTrend() {
+export default function MonthlyTrend({ accountId }) {
   const [data, setData] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    getMonthlyBreakdown()
+    getMonthlyBreakdown({ account_id: accountId })
       .then((rows) => {
         if (cancelled) return;
         setData(rows.slice(-12));
@@ -40,7 +40,7 @@ export default function MonthlyTrend() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accountId]);
 
   return (
     <div>

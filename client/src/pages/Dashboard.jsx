@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getTransactions, getSummary, getInsight } from '../api/client';
+import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getMonths, getTransactions, getSummary, getInsight } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
 import { useChatContext } from '../context/ChatContext';
 import { getProviderLabel } from '../utils/providers';
@@ -33,6 +33,18 @@ function computeRange(months) {
     from.setMonth(from.getMonth() - months);
   }
   return { from: toISODate(from), to: toISODate(to) };
+}
+
+// Full first-to-last-day range for a single "YYYY-MM" - used when the month
+// picker selects one specific month instead of "all periods".
+function monthRange(yyyymm) {
+  const [y, m] = yyyymm.split('-').map(Number);
+  return { from: toISODate(new Date(y, m - 1, 1)), to: toISODate(new Date(y, m, 0)) };
+}
+
+function formatMonthLabel(yyyymm) {
+  const [y, m] = yyyymm.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 }
 
 function formatRelativeDays(lastSyncAt) {
@@ -147,19 +159,19 @@ function computeAvgExpense(monthly) {
   return monthly.length ? monthly.reduce((sum, r) => sum + r.expense, 0) / monthly.length : 0;
 }
 
-function AnomalyStrip() {
+function AnomalyStrip({ accountId, from, to }) {
   const [rows, setRows] = useState([]);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getAnomalies()
+    getAnomalies({ account_id: accountId, from, to })
       .then((data) => !cancelled && setRows(data))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [accountId, from, to]);
 
   if (rows.length === 0) return null;
   const shown = rows.slice(0, 3);
@@ -475,15 +487,54 @@ function InsightCard() {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rangeKey, setRangeKey] = useState('month');
   const [accounts, setAccounts] = useState(null);
   const [error, setError] = useState('');
   const [resettingId, setResettingId] = useState(null);
   const [monthly, setMonthly] = useState([]);
+  const [months, setMonths] = useState([]);
   const { jobs, triggerSync, refresh } = useSyncStatusContext();
 
+  // selectedAccount/selectedMonth live in the URL (?account=, ?month=), not
+  // local state - that's the single source of truth, so there's nothing to
+  // resync: browser back/forward, a bookmarked link, or a fresh mount after
+  // navigating away and back all just re-read the current URL.
+  const rawAccountParam = searchParams.get('account') || 'all';
+  // Guard against a deleted account still referenced in an old URL/bookmark -
+  // (accounts || []) also makes this safe before accounts finishes loading.
+  const accountParamIsValid =
+    rawAccountParam === 'all' || (accounts || []).some((a) => String(a.id) === rawAccountParam);
+  const selectedAccount = accountParamIsValid ? rawAccountParam : 'all';
+  const selectedMonth = searchParams.get('month') || 'all';
+  const hasActiveFilter = selectedAccount !== 'all' || selectedMonth !== 'all';
+
+  function setFilterParam(key, value) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === 'all') {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('account');
+      next.delete('month');
+      return next;
+    });
+  }
+
   const activeRange = RANGE_OPTIONS.find((r) => r.key === rangeKey);
-  const range = computeRange(activeRange.months);
+  // The month picker overrides the quick range picker when a specific month
+  // is chosen; "all periods" falls back to the existing behavior unchanged.
+  const range = selectedMonth === 'all' ? computeRange(activeRange.months) : monthRange(selectedMonth);
+  const accountId = selectedAccount === 'all' ? undefined : Number(selectedAccount);
   const avgExpense = computeAvgExpense(monthly);
 
   useEffect(() => {
@@ -498,8 +549,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    getMonthlyBreakdown()
+    getMonthlyBreakdown({ account_id: accountId })
       .then((rows) => !cancelled && setMonthly(rows))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMonths()
+      .then((data) => !cancelled && setMonths(data))
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -575,28 +636,69 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold tracking-tight text-[var(--color-text)]">לוח בקרה</h2>
-        <div className="flex gap-1.5 rounded-xl p-1" style={{ backgroundColor: 'var(--color-surface-2)' }}>
-          {RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setRangeKey(opt.key)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                rangeKey === opt.key
-                  ? 'bg-[var(--color-accent)] text-white shadow hover:bg-[var(--color-accent-strong)]'
-                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Always mounted, at the far-right edge (first in DOM = rightmost
+              in RTL), right of the account selector. Only opacity/pointer-
+              events toggle with hasActiveFilter, so its box always reserves
+              its space and the selectors after it never shift. */}
+          <button
+            onClick={clearFilters}
+            tabIndex={hasActiveFilter ? 0 : -1}
+            className={`cursor-pointer text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)] ${
+              hasActiveFilter ? '' : 'pointer-events-none opacity-0'
+            }`}
+          >
+            נקה סינון
+          </button>
+          <select
+            value={selectedAccount}
+            onChange={(e) => setFilterParam('account', e.target.value)}
+            className="cursor-pointer rounded-lg border px-3 py-1.5 text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <option value="all">הכל</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.display_name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setFilterParam('month', e.target.value)}
+            className="cursor-pointer rounded-lg border px-3 py-1.5 text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface-2)]"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <option value="all">כל התקופה</option>
+            {[...months].reverse().map((m) => (
+              <option key={m} value={m}>
+                {formatMonthLabel(m)}
+              </option>
+            ))}
+          </select>
+          <div className="flex gap-1.5 rounded-xl p-1" style={{ backgroundColor: 'var(--color-surface-2)' }}>
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setRangeKey(opt.key)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  rangeKey === opt.key
+                    ? 'bg-[var(--color-accent)] text-white shadow hover:bg-[var(--color-accent-strong)]'
+                    : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <InsightCard />
 
-      <AnomalyStrip />
+      <AnomalyStrip accountId={accountId} from={range.from} to={range.to} />
 
       <MetricCards monthly={monthly} />
 
@@ -605,13 +707,13 @@ export default function Dashboard() {
           className="animate-in rounded-xl p-[18px]"
           style={{ backgroundColor: 'var(--color-surface)', animationDelay: '240ms' }}
         >
-          <MonthlyTrend />
+          <MonthlyTrend accountId={accountId} />
         </div>
         <div
           className="animate-in rounded-xl p-[18px]"
           style={{ backgroundColor: 'var(--color-surface)', animationDelay: '240ms' }}
         >
-          <SpendingByCategory from={range.from} to={range.to} />
+          <SpendingByCategory from={range.from} to={range.to} accountId={accountId} />
         </div>
       </div>
 
