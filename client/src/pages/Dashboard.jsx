@@ -161,6 +161,7 @@ function computeAvgExpense(monthly) {
 }
 
 function AnomalyStrip({ accountId, from, to }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [expanded, setExpanded] = useState(false);
 
@@ -236,6 +237,12 @@ function AnomalyStrip({ accountId, from, to }) {
               </span>
             </div>
           ))}
+          <button
+            onClick={() => navigate('/transactions?anomaly=1')}
+            className="mt-1 cursor-pointer self-start text-xs font-medium text-[var(--color-accent)] transition-colors hover:text-[var(--color-accent-strong)]"
+          >
+            לכל החריגות
+          </button>
         </div>
       )}
     </div>

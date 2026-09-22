@@ -43,7 +43,7 @@ function validateAccountId(accountId) {
 }
 
 function query_transactions(args = {}) {
-  const { userId, from, to, category, minAmount, maxAmount, limit } = args;
+  const { userId, from, to, category, minAmount, maxAmount, isAnomaly, limit } = args;
   requireUserId(userId);
   validateDate(from, 'from');
   validateDate(to, 'to');
@@ -83,6 +83,9 @@ function query_transactions(args = {}) {
   if (maxAmount !== undefined) {
     clauses.push('amount <= ?');
     params.push(maxAmount);
+  }
+  if (isAnomaly) {
+    clauses.push('is_anomaly = 1');
   }
 
   const where = `WHERE ${clauses.join(' AND ')}`;
@@ -188,7 +191,7 @@ function list_categories() {
 const TOOLS = [
   {
     name: 'query_transactions',
-    description: 'Query raw transactions with optional filters for date range, category, and amount range.',
+    description: 'Query raw transactions with optional filters for date range, category, amount range, and anomaly status.',
     parameters: {
       type: 'object',
       properties: {
@@ -197,6 +200,7 @@ const TOOLS = [
         category: { type: 'string', enum: CATEGORIES },
         minAmount: { type: 'number' },
         maxAmount: { type: 'number' },
+        isAnomaly: { type: 'boolean', description: 'Only return transactions flagged as anomalies' },
         limit: { type: 'integer', description: 'Max rows, 1-100, default 50' },
       },
     },

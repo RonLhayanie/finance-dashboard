@@ -10,7 +10,7 @@ function getValidCategorySlugs() {
 }
 
 router.get('/', (req, res) => {
-  const { from, to, category } = req.query;
+  const { from, to, category, anomaly } = req.query;
 
   if (from !== undefined && !DATE_RE.test(from)) {
     return res.status(400).json({ error: 'from must match YYYY-MM-DD' });
@@ -43,6 +43,9 @@ router.get('/', (req, res) => {
     params.push(category);
   } else {
     clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
+  }
+  if (anomaly === '1') {
+    clauses.push('is_anomaly = 1');
   }
   const where = `WHERE ${clauses.join(' AND ')}`;
 
