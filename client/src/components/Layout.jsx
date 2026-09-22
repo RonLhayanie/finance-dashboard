@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import OtpModal from './OtpModal';
 import SyncErrorToast from './SyncErrorToast';
 import ConfirmModal from './ConfirmModal';
+import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
 
 const NAV_ITEMS = [
   { to: '/', label: 'לוח בקרה', end: true },
@@ -24,15 +25,6 @@ const ICON_PROPS = {
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
 };
-
-function WalletIcon(props) {
-  return (
-    <svg {...ICON_PROPS} {...props}>
-      <path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" />
-      <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" />
-    </svg>
-  );
-}
 
 function LayoutDashboardIcon(props) {
   return (
@@ -156,15 +148,12 @@ export default function Layout() {
 
   return (
     <SyncStatusProvider>
-      <div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+      <div className="flex h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
         <aside
-          className="flex w-56 shrink-0 flex-col p-4"
+          className="sticky top-0 flex h-full w-56 shrink-0 flex-col overflow-hidden p-4"
           style={{ backgroundColor: 'var(--color-surface)', borderInlineStart: '0.5px solid var(--color-border)' }}
         >
-          <h1 className="mb-6 flex items-center gap-2 text-lg font-semibold text-[var(--color-accent)]">
-            <WalletIcon />
-            בקרה פיננסי
-          </h1>
+          <img src={ledgerlyLogo} alt="Ledgerly" className="mx-auto mb-6 w-40 h-auto py-2" />
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = NAV_ICONS[item.to];
@@ -201,7 +190,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <TopBar />
           <main className="flex-1 overflow-y-auto bg-[var(--color-bg)] p-6">
             <Outlet />
