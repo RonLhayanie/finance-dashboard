@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAccounts, addAccount, deleteAccount, resetSyncStatus } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
 import { PROVIDERS, FIELD_LABELS, getProviderFields, getProviderLabel } from '../utils/providers';
+import ConfirmModal from '../components/ConfirmModal';
 
 function emptyCredentials(provider) {
   return Object.fromEntries(getProviderFields(provider).map((f) => [f, '']));
@@ -106,6 +107,8 @@ export default function Accounts() {
   const [pending, setPending] = useState(false);
   const [resettingId, setResettingId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  // Which confirmation dialog is open, if any: { type: 'delete' | 'reset', accountId }
+  const [confirmState, setConfirmState] = useState(null);
   const { jobs, triggerSync, refresh: refreshSyncStatus } = useSyncStatusContext();
 
   function refresh() {
@@ -143,14 +146,17 @@ export default function Accounts() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm('למחוק את החשבון וכל הנתונים שלו? לא ניתן לבטל פעולה זו.')) return;
+  async function doDelete(id) {
     try {
       await deleteAccount(id);
       await refresh();
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function handleDelete(id) {
+    setConfirmState({ type: 'delete', accountId: id });
   }
 
   function isAccountActive(accountId) {
@@ -165,10 +171,7 @@ export default function Accounts() {
     }
   }
 
-  async function handleResetStuck(accountId) {
-    if (!window.confirm('לאפס את מצב הסנכרון עבור חשבון זה? יש לעשות זאת רק אם הסנכרון תקוע ולא באמת רץ כרגע.')) {
-      return;
-    }
+  async function doResetStuck(accountId) {
     setResettingId(accountId);
     try {
       await resetSyncStatus(accountId);
@@ -178,6 +181,17 @@ export default function Accounts() {
     } finally {
       setResettingId(null);
     }
+  }
+
+  function handleResetStuck(accountId) {
+    setConfirmState({ type: 'reset', accountId });
+  }
+
+  function handleConfirmAction() {
+    const { type, accountId } = confirmState;
+    setConfirmState(null);
+    if (type === 'delete') doDelete(accountId);
+    else if (type === 'reset') doResetStuck(accountId);
   }
 
   const fields = getProviderFields(provider);
@@ -325,6 +339,21 @@ export default function Accounts() {
         </form>
         <p className="mt-3 text-xs text-[var(--color-text-dim)]">פרטי ההתחברות מוצפנים בשרת שלך ואינם יוצאים ממנו לעולם.</p>
       </div>
+
+      <ConfirmModal
+        open={confirmState !== null}
+        title={confirmState?.type === 'delete' ? 'מחיקת חשבון' : 'איפוס סנכרון'}
+        message={
+          confirmState?.type === 'delete'
+            ? 'למחוק את החשבון וכל הנתונים שלו?'
+            : 'לאפס את מצב הסנכרון עבור חשבון זה? יש לעשות זאת רק אם הסנכרון תקוע ולא באמת רץ כרגע.'
+        }
+        warning={confirmState?.type === 'delete' ? 'לא ניתן לבטל פעולה זו.' : undefined}
+        confirmLabel={confirmState?.type === 'delete' ? 'מחק' : 'אפס סנכרון'}
+        variant={confirmState?.type === 'delete' ? 'danger' : 'default'}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }

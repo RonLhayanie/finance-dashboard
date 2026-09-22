@@ -9,6 +9,7 @@ import { getCategoryLabel } from '../utils/categories';
 import { formatILS } from '../utils/format';
 import SpendingByCategory from '../components/charts/SpendingByCategory';
 import MonthlyTrend from '../components/charts/MonthlyTrend';
+import ConfirmModal from '../components/ConfirmModal';
 
 const RANGE_OPTIONS = [
   { key: 'month', label: 'החודש', months: 0 },
@@ -492,6 +493,7 @@ export default function Dashboard() {
   const [accounts, setAccounts] = useState(null);
   const [error, setError] = useState('');
   const [resettingId, setResettingId] = useState(null);
+  const [confirmResetId, setConfirmResetId] = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [months, setMonths] = useState([]);
   const { jobs, triggerSync, refresh } = useSyncStatusContext();
@@ -597,10 +599,7 @@ export default function Dashboard() {
     return jobs.some((j) => j.account_id === accountId && (j.status === 'RUNNING' || j.status === 'NEEDS_OTP'));
   }
 
-  async function handleResetStuck(accountId) {
-    if (!window.confirm('לאפס את מצב הסנכרון עבור חשבון זה? יש לעשות זאת רק אם הסנכרון תקוע ולא באמת רץ כרגע.')) {
-      return;
-    }
+  async function doResetStuck(accountId) {
     setResettingId(accountId);
     try {
       await resetSyncStatus(accountId);
@@ -610,6 +609,16 @@ export default function Dashboard() {
     } finally {
       setResettingId(null);
     }
+  }
+
+  function handleResetStuck(accountId) {
+    setConfirmResetId(accountId);
+  }
+
+  function handleConfirmReset() {
+    const accountId = confirmResetId;
+    setConfirmResetId(null);
+    doResetStuck(accountId);
   }
 
   function getAccountStatus(account) {
@@ -784,6 +793,16 @@ export default function Dashboard() {
           </ul>
         )}
       </div>
+
+      <ConfirmModal
+        open={confirmResetId !== null}
+        title="איפוס סנכרון"
+        message="לאפס את מצב הסנכרון עבור חשבון זה? יש לעשות זאת רק אם הסנכרון תקוע ולא באמת רץ כרגע."
+        confirmLabel="אפס סנכרון"
+        variant="default"
+        onConfirm={handleConfirmReset}
+        onCancel={() => setConfirmResetId(null)}
+      />
     </div>
   );
 }

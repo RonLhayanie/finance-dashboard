@@ -4,6 +4,7 @@ import { SyncStatusProvider, useSyncStatusContext } from '../context/SyncStatusC
 import { useAuth } from '../context/AuthContext';
 import OtpModal from './OtpModal';
 import SyncErrorToast from './SyncErrorToast';
+import ConfirmModal from './ConfirmModal';
 
 const NAV_ITEMS = [
   { to: '/', label: 'לוח בקרה', end: true },
@@ -140,6 +141,7 @@ function OtpGate() {
 export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [confirmLogout, setConfirmLogout] = useState(false);
   // Remembers the query string last seen while on the dashboard route, so
   // the sidebar link restores its filters (?account=, ?month=) even after
   // navigating away to another page and back - location.search alone only
@@ -191,8 +193,8 @@ export default function Layout() {
 
           <div className="mt-auto pt-4">
             <button
-              onClick={logout}
-              className="text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)]"
+              onClick={() => setConfirmLogout(true)}
+              className="cursor-pointer text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)]"
             >
               התנתקות ({user})
             </button>
@@ -209,6 +211,18 @@ export default function Layout() {
 
       <OtpGate />
       <SyncErrorToast />
+      <ConfirmModal
+        open={confirmLogout}
+        title="התנתקות"
+        message="האם אתה בטוח שברצונך להתנתק מהחשבון?"
+        confirmLabel="התנתק"
+        variant="default"
+        onConfirm={() => {
+          setConfirmLogout(false);
+          logout();
+        }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </SyncStatusProvider>
   );
 }
