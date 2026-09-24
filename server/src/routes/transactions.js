@@ -9,6 +9,13 @@ function getValidCategorySlugs() {
   return db.prepare('SELECT slug FROM category_labels').all().map((r) => r.slug);
 }
 
+// Invalid/negative/repeated values are ignored rather than rejected.
+function parseAmount(value) {
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
 router.get('/', (req, res) => {
   const { from, to, category, anomaly } = req.query;
 
@@ -46,6 +53,17 @@ router.get('/', (req, res) => {
   }
   if (anomaly === '1') {
     clauses.push('is_anomaly = 1');
+  }
+  // Expenses are stored negative, so the range applies to the magnitude.
+  const minAmount = parseAmount(req.query.minAmount);
+  const maxAmount = parseAmount(req.query.maxAmount);
+  if (minAmount !== undefined) {
+    clauses.push('ABS(amount) >= ?');
+    params.push(minAmount);
+  }
+  if (maxAmount !== undefined) {
+    clauses.push('ABS(amount) <= ?');
+    params.push(maxAmount);
   }
   const where = `WHERE ${clauses.join(' AND ')}`;
 

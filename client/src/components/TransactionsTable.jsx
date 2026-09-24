@@ -13,6 +13,10 @@ const PAGE_SIZE = 20;
 const filterClass =
   'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-accent)]';
 
+// Same look as filterClass, but a text cursor since these are typed into.
+const amountInputClass =
+  'w-28 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-sm text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-accent)]';
+
 // getTransactions expects plain YYYY-MM-DD strings; the picker works in Date
 // objects. date-fns' format() reads local date parts directly (unlike
 // toISOString, which converts through UTC and can shift the date near
@@ -60,6 +64,10 @@ export default function TransactionsTable() {
   // with from/to since all four are independent params ANDed together by
   // the backend.
   const anomalyOnly = searchParams.get('anomaly') === '1';
+  // Also URL-driven; raw strings are passed through and the backend
+  // ignores anything that isn't a non-negative number.
+  const minAmount = searchParams.get('minAmount') || '';
+  const maxAmount = searchParams.get('maxAmount') || '';
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [offset, setOffset] = useState(0);
@@ -78,6 +86,8 @@ export default function TransactionsTable() {
       from: from || undefined,
       to: to || undefined,
       anomaly: anomalyOnly ? 1 : undefined,
+      minAmount: minAmount || undefined,
+      maxAmount: maxAmount || undefined,
       limit: PAGE_SIZE,
       offset,
     })
@@ -91,7 +101,7 @@ export default function TransactionsTable() {
     return () => {
       cancelled = true;
     };
-  }, [category, from, to, anomalyOnly, offset]);
+  }, [category, from, to, anomalyOnly, minAmount, maxAmount, offset]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -150,9 +160,35 @@ export default function TransactionsTable() {
     setOffset(0);
   }
 
-  function clearDateRange() {
+  // replace: true so typing doesn't push a history entry per keystroke.
+  function handleAmountChange(key) {
+    return (e) => {
+      const value = e.target.value;
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value) {
+            next.set(key, value);
+          } else {
+            next.delete(key);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+      setOffset(0);
+    };
+  }
+
+  function clearRangeFilters() {
     setFrom('');
     setTo('');
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('minAmount');
+      next.delete('maxAmount');
+      return next;
+    });
     setOffset(0);
     setPickerOpen(false);
   }
@@ -211,10 +247,34 @@ export default function TransactionsTable() {
           )}
         </div>
 
-        {(from || to) && (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-[var(--color-text-muted)]">מסכום</span>
+          <input
+            type="number"
+            min="0"
+            inputMode="decimal"
+            value={minAmount}
+            onChange={handleAmountChange('minAmount')}
+            className={amountInputClass}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-[var(--color-text-muted)]">עד סכום</span>
+          <input
+            type="number"
+            min="0"
+            inputMode="decimal"
+            value={maxAmount}
+            onChange={handleAmountChange('maxAmount')}
+            className={amountInputClass}
+          />
+        </label>
+
+        {(from || to || minAmount || maxAmount) && (
           <button
             type="button"
-            onClick={clearDateRange}
+            onClick={clearRangeFilters}
             className="cursor-pointer rounded-lg bg-[var(--color-surface-2)] px-3 py-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
           >
             נקה
