@@ -17,13 +17,19 @@ function createVerificationToken(userId, type, ttlMinutes) {
   return token;
 }
 
-// Returns the row for an unexpired token of this type, or undefined.
-function findValidToken(token, type) {
-  return db
+// Single use: a valid token is deleted on consumption (same for every type).
+// Expired rows are left in place so a repeat click still reports "expired".
+// Returns { userId } | { error: 'invalid' } | { error: 'expired' }.
+function consumeToken(token, type) {
+  const row = db
     .prepare(
-      "SELECT id, user_id, type, expires_at FROM verification_tokens WHERE token = ? AND type = ? AND expires_at > datetime('now')"
+      "SELECT id, user_id, expires_at <= datetime('now') AS expired FROM verification_tokens WHERE token = ? AND type = ?"
     )
     .get(hashToken(token), type);
+  if (!row) return { error: 'invalid' };
+  if (row.expired) return { error: 'expired' };
+  db.prepare('DELETE FROM verification_tokens WHERE id = ?').run(row.id);
+  return { userId: row.user_id };
 }
 
-module.exports = { createVerificationToken, findValidToken };
+module.exports = { createVerificationToken, consumeToken };

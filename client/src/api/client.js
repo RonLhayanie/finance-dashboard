@@ -61,3 +61,5 @@ export const sendChat = (messages) => request('/chat', { method: 'POST', body: {
 export const login = (username, password) => request('/auth/login', { method: 'POST', body: { username, password } });
 export const logout = () => request('/auth/logout', { method: 'POST' });
 export const getMe = () => request('/auth/me');
+export const signup = (fields) => request('/auth/signup', { method: 'POST', body: fields });
+export const verifyEmail = (token) => request(`/auth/verify-email${toQuery({ token })}`);
