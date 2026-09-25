@@ -12,7 +12,7 @@ const router = express.Router();
 const VERIFY_TOKEN_TTL_MINUTES = 24 * 60;
 
 function getProfile(userId) {
-  return db.prepare('SELECT first_name, username, email, phone FROM users WHERE id = ?').get(userId);
+  return db.prepare('SELECT first_name, last_name, email, phone FROM users WHERE id = ?').get(userId);
 }
 
 // Wrong password is 403, not 401: the client treats any 401 as an expired
@@ -37,7 +37,7 @@ router.put('/profile', async (req, res) => {
   const current = getProfile(req.userId);
   const updates = {};
 
-  for (const field of ['first_name', 'phone']) {
+  for (const field of ['first_name', 'last_name', 'phone']) {
     if (body[field] === undefined) continue;
     if (typeof body[field] !== 'string' || !body[field].trim()) {
       return res.status(400).json({ error: `${field} cannot be empty` });

@@ -66,6 +66,7 @@ function useAction() {
 
 function ProfileSection({ profile, onSaved }) {
   const [firstName, setFirstName] = useState(profile.first_name || '');
+  const [lastName, setLastName] = useState(profile.last_name || '');
   const [phone, setPhone] = useState(profile.phone || '');
   const details = useAction();
 
@@ -76,7 +77,10 @@ function ProfileSection({ profile, onSaved }) {
 
   async function saveDetails(e) {
     e.preventDefault();
-    const data = await details.run(() => updateProfile({ first_name: firstName, phone }));
+    // Older accounts may have no last name yet; don't block saving other fields on it.
+    const fields = { first_name: firstName, phone };
+    if (lastName.trim() || profile.last_name) fields.last_name = lastName;
+    const data = await details.run(() => updateProfile(fields));
     if (data) {
       onSaved(data.profile);
       details.setStatus({ ok: true, text: 'הפרטים נשמרו' });
@@ -106,11 +110,11 @@ function ProfileSection({ profile, onSaved }) {
   return (
     <Section title="פרופיל">
       <form onSubmit={saveDetails} className="space-y-3">
-        <Field label="שם משתמש">
-          <input value={profile.username} disabled className={`${inputClass} opacity-60`} style={inputStyle} />
-        </Field>
         <Field label="שם פרטי">
           <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass} style={inputStyle} />
+        </Field>
+        <Field label="שם משפחה">
+          <input value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass} style={inputStyle} />
         </Field>
         <Field label="טלפון">
           <input
