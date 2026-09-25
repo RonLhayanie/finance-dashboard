@@ -266,6 +266,13 @@ export default function Login() {
           >
             {pending ? 'מתחבר...' : 'התחברות'}
           </button>
+
+          <p className="text-center text-xs text-[var(--color-text-muted)]">
+            אין לך חשבון?{' '}
+            <Link to="/signup" className="text-[var(--color-accent)] hover:underline">
+              הרשמה
+            </Link>
+          </p>
         </div>
       </div>
     </div>
