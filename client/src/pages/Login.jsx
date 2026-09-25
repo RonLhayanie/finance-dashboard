@@ -163,7 +163,7 @@ function NeuralBackground() {
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -171,12 +171,12 @@ export default function Login() {
   const [pending, setPending] = useState(false);
 
   async function handleSubmit() {
-    if (!username || !password || pending) return;
+    if (!email || !password || pending) return;
     setError('');
     setUnverifiedEmail(null);
     setPending(true);
     try {
-      await login(username, password);
+      await login(email, password);
       setPassword('');
       navigate('/', { replace: true });
     } catch (err) {
@@ -213,15 +213,16 @@ export default function Login() {
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="username" className="mb-1.5 block text-sm text-[var(--color-text-muted)]">
-              שם משתמש
+            <label htmlFor="email" className="mb-1.5 block text-sm text-[var(--color-text-muted)]">
+              אימייל
             </label>
             <input
-              id="username"
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              dir="ltr"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-[var(--color-text)] outline-none transition-colors focus:border-[var(--color-accent)]"
             />
@@ -261,7 +262,7 @@ export default function Login() {
 
           <button
             onClick={handleSubmit}
-            disabled={pending || !username || !password}
+            disabled={pending || !email || !password}
             className="w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 font-medium text-white transition-colors hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? 'מתחבר...' : 'התחברות'}

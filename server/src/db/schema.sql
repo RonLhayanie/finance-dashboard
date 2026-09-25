@@ -1,11 +1,14 @@
+-- username is legacy (login is by email); kept for existing rows, unused otherwise.
+-- Keep in sync with the users rebuild in db.js.
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
+  username TEXT,
   password_hash TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  email TEXT,
+  email TEXT NOT NULL,
   phone TEXT,
   first_name TEXT,
+  last_name TEXT,
   email_verified INTEGER NOT NULL DEFAULT 0
 );
 

@@ -67,23 +67,22 @@ router.post('/login', limitRequests(), (req, res) => {
     return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
   }
 
-  const { username, password } = req.body || {};
-  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+  const { email, password } = req.body || {};
+  if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
   }
 
   const user = db
-    .prepare('SELECT id, username, password_hash, email, email_verified FROM users WHERE username = ?')
-    .get(username);
+    .prepare('SELECT id, username, password_hash, email, email_verified FROM users WHERE email = ?')
+    .get(email.trim().toLowerCase());
   if (!user || !verifyPassword(password, user.password_hash)) {
     recordFailure(ip);
-    return res.status(401).json({ error: 'Invalid username or password' });
+    return res.status(401).json({ error: 'Invalid email or password' });
   }
 
   attempts.delete(ip);
   if (!user.email_verified) {
-    // Password already verified, so returning the email leaks nothing; the
-    // login page needs it to offer a resend (login is by username).
+    // The login page's resend button uses this stored (normalized) email.
     return res.status(403).json({ error: 'Please verify your email before logging in', email: user.email });
   }
   const token = createSession(user.id);
