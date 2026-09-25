@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { signup } from '../api/client';
 import AuthCard, { authInputClass } from '../components/AuthCard';
+import ResendVerification from '../components/ResendVerification';
 
 const FIELDS = [
   { name: 'firstName', label: 'שם פרטי', type: 'text', autoComplete: 'given-name' },
@@ -17,6 +18,7 @@ export default function Signup() {
   const [values, setValues] = useState(EMPTY);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [emailFailed, setEmailFailed] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e) {
@@ -29,13 +31,27 @@ export default function Signup() {
     setError('');
     setPending(true);
     try {
-      await signup(values);
+      const data = await signup(values);
+      // Matches the wording of signup's email-failure message in server/src/routes/auth.js.
+      setEmailFailed(Boolean(data?.message?.includes('may not have arrived')));
       setSuccess(true);
     } catch (err) {
       setError(err.message);
     } finally {
       setPending(false);
     }
+  }
+
+  if (success && emailFailed) {
+    return (
+      <AuthCard title="החשבון נוצר">
+        <p className="mb-4 text-center text-sm text-[var(--color-text-muted)]">
+          ייתכן שמייל האימות לא נשלח אל <span dir="ltr" className="text-[var(--color-text)]">{values.email}</span>. ניתן
+          לבקש קישור אימות חדש:
+        </p>
+        <ResendVerification email={values.email} />
+      </AuthCard>
+    );
   }
 
   if (success) {
