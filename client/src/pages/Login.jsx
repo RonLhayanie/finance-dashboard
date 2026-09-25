@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
+import ResendVerification from '../components/ResendVerification';
 
 const ICON_PROPS = {
   width: 18,
@@ -166,11 +167,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit() {
     if (!username || !password || pending) return;
     setError('');
+    setUnverifiedEmail(null);
     setPending(true);
     try {
       await login(username, password);
@@ -178,6 +181,7 @@ export default function Login() {
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
+      if (err.status === 403) setUnverifiedEmail(err.data?.email ?? '');
       setPassword('');
     } finally {
       setPending(false);
@@ -250,6 +254,7 @@ export default function Login() {
           </div>
 
           {error && <div className="text-sm text-[var(--color-expense)]">{error}</div>}
+          {unverifiedEmail !== null && <ResendVerification email={unverifiedEmail} />}
 
           <button
             onClick={handleSubmit}

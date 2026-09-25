@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db/db');
 const { verifyPassword, hashPassword } = require('../auth/password');
-const { createVerificationToken, consumeToken } = require('../db/tokens');
+const { createVerificationToken, consumeToken, deleteTokens } = require('../db/tokens');
 const { sendVerificationEmail } = require('../email/email');
 const { createSession, getSession, destroySession } = require('../auth/session');
 const { requireAuth, parseCookies, COOKIE_NAME } = require('../auth/middleware');
@@ -48,13 +48,20 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Username and password are required' });
   }
 
-  const user = db.prepare('SELECT id, username, password_hash FROM users WHERE username = ?').get(username);
+  const user = db
+    .prepare('SELECT id, username, password_hash, email, email_verified FROM users WHERE username = ?')
+    .get(username);
   if (!user || !verifyPassword(password, user.password_hash)) {
     recordFailure(ip);
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
   attempts.delete(ip);
+  if (!user.email_verified) {
+    // Password already verified, so returning the email leaks nothing; the
+    // login page needs it to offer a resend (login is by username).
+    return res.status(403).json({ error: 'Please verify your email before logging in', email: user.email });
+  }
   const token = createSession(user.id);
   res.setHeader('Set-Cookie', sessionCookie(token));
   res.json({ ok: true, username: user.username });
@@ -92,26 +99,24 @@ router.post('/signup', async (req, res) => {
     return res.status(409).json({ error: 'Email is already registered' });
   }
 
-  const { userId, token } = db.transaction(() => {
+  const token = db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
         'INSERT INTO users (username, password_hash, email, phone, first_name, email_verified) VALUES (?, ?, ?, ?, ?, 0)'
       )
       .run(username, hashPassword(password), email, phone, firstName);
-    return {
-      userId: lastInsertRowid,
-      token: createVerificationToken(lastInsertRowid, 'email_verify', VERIFY_TOKEN_TTL_MINUTES),
-    };
+    return createVerificationToken(lastInsertRowid, 'email_verify', VERIFY_TOKEN_TTL_MINUTES);
   })();
 
   try {
     await sendVerificationEmail(email, token);
   } catch (err) {
-    // No resend-verification flow yet, so a user whose email never arrived
-    // would be stuck. Roll back (token row cascades) so they can sign up again.
-    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    // Account stays; the user can request a new link via resend-verification.
     console.error(err);
-    return res.status(502).json({ error: 'Could not send verification email. Please try again.' });
+    return res.status(201).json({
+      ok: true,
+      message: 'Account created, but the verification email may not have arrived. Use "resend verification email" to get a new link.',
+    });
   }
 
   res.status(201).json({ ok: true, message: 'Account created. Check your email to verify your address.' });
@@ -136,6 +141,30 @@ router.get('/verify-email', (req, res) => {
     return res.status(400).json({ error: 'Invalid or already used verification link' });
   }
   res.json({ ok: true, message: 'Email verified' });
+});
+
+const RESEND_MESSAGE = 'If that email belongs to an unverified account, a new verification link has been sent.';
+
+router.post('/resend-verification', (req, res) => {
+  const { email } = req.body || {};
+  if (typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  const user = db
+    .prepare('SELECT id, email FROM users WHERE email = ? AND email_verified = 0')
+    .get(email.trim().toLowerCase());
+  if (user) {
+    const token = db.transaction(() => {
+      deleteTokens(user.id, 'email_verify');
+      return createVerificationToken(user.id, 'email_verify', VERIFY_TOKEN_TTL_MINUTES);
+    })();
+    // Not awaited: the response must look the same (content and timing)
+    // whether or not the email exists, so a send failure is only logged.
+    sendVerificationEmail(user.email, token).catch((err) => console.error(err));
+  }
+
+  res.json({ ok: true, message: RESEND_MESSAGE });
 });
 
 router.get('/me', (req, res) => {

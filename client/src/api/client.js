@@ -17,7 +17,10 @@ async function request(path, { method = 'GET', body } = {}) {
   const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data?.error || `Request failed with status ${response.status}`);
+    const err = new Error(data?.error || `Request failed with status ${response.status}`);
+    err.status = response.status;
+    err.data = data;
+    throw err;
   }
 
   return data;
@@ -63,3 +66,4 @@ export const logout = () => request('/auth/logout', { method: 'POST' });
 export const getMe = () => request('/auth/me');
 export const signup = (fields) => request('/auth/signup', { method: 'POST', body: fields });
 export const verifyEmail = (token) => request(`/auth/verify-email${toQuery({ token })}`);
+export const resendVerification = (email) => request('/auth/resend-verification', { method: 'POST', body: { email } });

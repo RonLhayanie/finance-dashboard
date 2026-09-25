@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { verifyEmail } from '../api/client';
 import AuthCard from '../components/AuthCard';
+import ResendVerification from '../components/ResendVerification';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const [status, setStatus] = useState(token ? 'pending' : 'error');
   const [error, setError] = useState(token ? '' : 'קישור האימות חסר או שגוי');
+  const [expired, setExpired] = useState(false);
   // Tokens are single-use. StrictMode runs effects twice in dev, and the
   // second call would get "already used" - so call exactly once per mount.
   const started = useRef(false);
@@ -19,6 +21,7 @@ export default function VerifyEmail() {
       .then(() => setStatus('success'))
       .catch((err) => {
         setError(err.message);
+        setExpired(err.status === 410);
         setStatus('error');
       });
   }, [token]);
@@ -44,6 +47,11 @@ export default function VerifyEmail() {
   return (
     <AuthCard title="האימות נכשל">
       <p className="text-center text-sm text-[var(--color-expense)]">{error}</p>
+      {expired && (
+        <div className="mt-4">
+          <ResendVerification />
+        </div>
+      )}
     </AuthCard>
   );
 }

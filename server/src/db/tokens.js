@@ -32,4 +32,8 @@ function consumeToken(token, type) {
   return { userId: row.user_id };
 }
 
-module.exports = { createVerificationToken, consumeToken };
+function deleteTokens(userId, type) {
+  db.prepare('DELETE FROM verification_tokens WHERE user_id = ? AND type = ?').run(userId, type);
+}
+
+module.exports = { createVerificationToken, consumeToken, deleteTokens };
