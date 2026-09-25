@@ -69,3 +69,8 @@ export const verifyEmail = (token) => request(`/auth/verify-email${toQuery({ tok
 export const resendVerification = (email) => request('/auth/resend-verification', { method: 'POST', body: { email } });
 export const forgotPassword = (email) => request('/auth/forgot-password', { method: 'POST', body: { email } });
 export const resetPassword = (fields) => request('/auth/reset-password', { method: 'POST', body: fields });
+
+// User settings
+export const getProfile = () => request('/user/profile');
+export const updateProfile = (fields) => request('/user/profile', { method: 'PUT', body: fields });
+export const deleteMyAccount = (currentPassword) => request('/user/account', { method: 'DELETE', body: { currentPassword } });

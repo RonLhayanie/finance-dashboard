@@ -13,6 +13,7 @@ const chatRouter = require('./routes/chat');
 const accountsRouter = require('./routes/accounts');
 const transactionsRouter = require('./routes/transactions');
 const authRouter = require('./routes/auth');
+const userRouter = require('./routes/user');
 const { requireAuth } = require('./auth/middleware');
 const { startScheduler } = require('./scheduler');
 
@@ -37,6 +38,7 @@ app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/transactions', transactionsRouter);
+app.use('/api/user', userRouter);
 
 // Serve the built client and let the SPA handle client-side routes.
 const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');

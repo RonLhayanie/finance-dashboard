@@ -24,5 +24,11 @@ function destroySession(token) {
   sessions.delete(token);
 }
 
+function destroyUserSessions(userId) {
+  for (const [token, session] of sessions) {
+    if (session.userId === userId) sessions.delete(token);
+  }
+}
+
 // Sessions are in-memory: a server restart logs the user out. Acceptable for a single-user app.
-module.exports = { createSession, getSession, destroySession };
+module.exports = { createSession, getSession, destroySession, destroyUserSessions };

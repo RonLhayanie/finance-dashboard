@@ -13,6 +13,7 @@ import Transactions from './pages/Transactions';
 import Subscriptions from './pages/Subscriptions';
 import Chat from './pages/Chat';
 import Accounts from './pages/Accounts';
+import Settings from './pages/Settings';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="subscriptions" element={<Subscriptions />} />
             <Route path="chat" element={<Chat />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>
