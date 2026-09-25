@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
 import ResendVerification from '../components/ResendVerification';
@@ -251,6 +251,9 @@ export default function Login() {
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
+            <Link to="/forgot-password" className="mt-1.5 inline-block text-xs text-[var(--color-accent)] hover:underline">
+              שכחת סיסמה?
+            </Link>
           </div>
 
           {error && <div className="text-sm text-[var(--color-expense)]">{error}</div>}

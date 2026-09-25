@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db/db');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { createVerificationToken, consumeToken, deleteTokens } = require('../db/tokens');
-const { sendVerificationEmail } = require('../email/email');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../email/email');
 const { createSession, getSession, destroySession } = require('../auth/session');
 const { requireAuth, parseCookies, COOKIE_NAME } = require('../auth/middleware');
 
@@ -166,6 +166,59 @@ router.post('/resend-verification', (req, res) => {
   }
 
   res.json({ ok: true, message: RESEND_MESSAGE });
+});
+
+const RESET_TOKEN_TTL_MINUTES = 60;
+const FORGOT_MESSAGE = 'If that email is registered, a password reset link has been sent.';
+
+router.post('/forgot-password', (req, res) => {
+  const { email } = req.body || {};
+  if (typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  const user = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email.trim().toLowerCase());
+  if (user) {
+    const token = db.transaction(() => {
+      deleteTokens(user.id, 'password_reset');
+      return createVerificationToken(user.id, 'password_reset', RESET_TOKEN_TTL_MINUTES);
+    })();
+    // Not awaited, same reason as resend-verification: identical response either way.
+    sendPasswordResetEmail(user.email, token).catch((err) => console.error(err));
+  }
+
+  res.json({ ok: true, message: FORGOT_MESSAGE });
+});
+
+router.post('/reset-password', (req, res) => {
+  const { token, newPassword, newPasswordConfirm } = req.body || {};
+  if ([token, newPassword, newPasswordConfirm].some((v) => typeof v !== 'string' || !v)) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  // Validate before consuming so a typo doesn't burn the token.
+  if (newPassword !== newPasswordConfirm) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  const result = db.transaction(() => {
+    const r = consumeToken(token, 'password_reset');
+    if (r.userId) {
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(newPassword), r.userId);
+      deleteTokens(r.userId, 'password_reset');
+    }
+    return r;
+  })();
+
+  if (result.error === 'expired') {
+    return res.status(410).json({ error: 'Reset link has expired' });
+  }
+  if (result.error) {
+    return res.status(400).json({ error: 'Invalid or already used reset link' });
+  }
+  res.json({ ok: true, message: 'Password updated. You can now log in.' });
 });
 
 router.get('/me', (req, res) => {

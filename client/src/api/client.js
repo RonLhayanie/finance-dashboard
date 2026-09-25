@@ -67,3 +67,5 @@ export const getMe = () => request('/auth/me');
 export const signup = (fields) => request('/auth/signup', { method: 'POST', body: fields });
 export const verifyEmail = (token) => request(`/auth/verify-email${toQuery({ token })}`);
 export const resendVerification = (email) => request('/auth/resend-verification', { method: 'POST', body: { email } });
+export const forgotPassword = (email) => request('/auth/forgot-password', { method: 'POST', body: { email } });
+export const resetPassword = (fields) => request('/auth/reset-password', { method: 'POST', body: fields });
