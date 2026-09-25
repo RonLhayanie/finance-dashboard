@@ -31,13 +31,37 @@ function recordFailure(ip) {
   }
 }
 
+// Per-IP cap on every request to one endpoint (each call gets its own Map),
+// on top of login's failed-attempt lockout above.
+// In-memory and per-process; an expired entry is only replaced when that IP
+// returns. Fine for a single instance on Tailscale; needs a shared store if
+// this ever runs as multiple processes.
+const REQUEST_LIMIT = 10;
+function limitRequests() {
+  const hits = new Map();
+  return (req, res, next) => {
+    const ip = req.ip || 'unknown';
+    const now = Date.now();
+    let entry = hits.get(ip);
+    if (!entry || now > entry.resetAt) {
+      entry = { count: 0, resetAt: now + WINDOW_MS };
+      hits.set(ip, entry);
+    }
+    entry.count += 1;
+    if (entry.count > REQUEST_LIMIT) {
+      return res.status(429).json({ error: 'Too many attempts, please try again later.' });
+    }
+    next();
+  };
+}
+
 function sessionCookie(token) {
   // Secure flag omitted: app is served over the Tailscale interface (HTTP within an
   // encrypted mesh). If Caddy/HTTPS is ever put in front, add '; Secure'.
   return `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}`;
 }
 
-router.post('/login', (req, res) => {
+router.post('/login', limitRequests(), (req, res) => {
   const ip = req.ip || 'unknown';
   if (isRateLimited(ip)) {
     return res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
@@ -75,7 +99,7 @@ router.post('/logout', requireAuth, (req, res) => {
 
 const VERIFY_TOKEN_TTL_MINUTES = 24 * 60;
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', limitRequests(), async (req, res) => {
   const body = req.body || {};
   const fields = ['email', 'password', 'passwordConfirm', 'firstName', 'username', 'phone'];
   if (fields.some((f) => typeof body[f] !== 'string' || body[f].trim() === '')) {
@@ -146,7 +170,7 @@ router.get('/verify-email', (req, res) => {
 
 const RESEND_MESSAGE = 'If that email belongs to an unverified account, a new verification link has been sent.';
 
-router.post('/resend-verification', (req, res) => {
+router.post('/resend-verification', limitRequests(), (req, res) => {
   const { email } = req.body || {};
   if (typeof email !== 'string' || !email.trim()) {
     return res.status(400).json({ error: 'Email is required' });
@@ -171,7 +195,7 @@ router.post('/resend-verification', (req, res) => {
 const RESET_TOKEN_TTL_MINUTES = 60;
 const FORGOT_MESSAGE = 'If that email is registered, a password reset link has been sent.';
 
-router.post('/forgot-password', (req, res) => {
+router.post('/forgot-password', limitRequests(), (req, res) => {
   const { email } = req.body || {};
   if (typeof email !== 'string' || !email.trim()) {
     return res.status(400).json({ error: 'Email is required' });
@@ -190,7 +214,7 @@ router.post('/forgot-password', (req, res) => {
   res.json({ ok: true, message: FORGOT_MESSAGE });
 });
 
-router.post('/reset-password', (req, res) => {
+router.post('/reset-password', limitRequests(), (req, res) => {
   const { token, newPassword, newPasswordConfirm } = req.body || {};
   if ([token, newPassword, newPasswordConfirm].some((v) => typeof v !== 'string' || !v)) {
     return res.status(400).json({ error: 'All fields are required' });
