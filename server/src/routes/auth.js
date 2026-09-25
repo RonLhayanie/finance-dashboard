@@ -115,11 +115,12 @@ router.post('/signup', async (req, res) => {
     console.error(err);
     return res.status(201).json({
       ok: true,
+      emailSent: false,
       message: 'Account created, but the verification email may not have arrived. Use "resend verification email" to get a new link.',
     });
   }
 
-  res.status(201).json({ ok: true, message: 'Account created. Check your email to verify your address.' });
+  res.status(201).json({ ok: true, emailSent: true, message: 'Account created. Check your email to verify your address.' });
 });
 
 router.get('/verify-email', (req, res) => {

@@ -32,8 +32,7 @@ export default function Signup() {
     setPending(true);
     try {
       const data = await signup(values);
-      // Matches the wording of signup's email-failure message in server/src/routes/auth.js.
-      setEmailFailed(Boolean(data?.message?.includes('may not have arrived')));
+      setEmailFailed(data?.emailSent === false);
       setSuccess(true);
     } catch (err) {
       setError(err.message);
