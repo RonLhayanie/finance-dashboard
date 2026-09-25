@@ -100,13 +100,22 @@ const VERIFY_TOKEN_TTL_MINUTES = 24 * 60;
 
 router.post('/signup', limitRequests(), async (req, res) => {
   const body = req.body || {};
-  const fields = ['email', 'password', 'passwordConfirm', 'firstName', 'username', 'phone'];
-  if (fields.some((f) => typeof body[f] !== 'string' || body[f].trim() === '')) {
-    return res.status(400).json({ error: 'All fields are required' });
+  const SIGNUP_FIELDS = {
+    firstName: 'First name',
+    lastName: 'Last name',
+    email: 'Email',
+    phone: 'Phone',
+    password: 'Password',
+    passwordConfirm: 'Password confirmation',
+  };
+  const missing = Object.keys(SIGNUP_FIELDS).find((f) => typeof body[f] !== 'string' || body[f].trim() === '');
+  if (missing) {
+    return res.status(400).json({ error: `${SIGNUP_FIELDS[missing]} is required` });
   }
-  const { password, passwordConfirm, username } = body;
+  const { password, passwordConfirm } = body;
   const email = body.email.trim().toLowerCase();
   const firstName = body.firstName.trim();
+  const lastName = body.lastName.trim();
   const phone = body.phone.trim();
 
   if (password !== passwordConfirm) {
@@ -115,9 +124,6 @@ router.post('/signup', limitRequests(), async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
-  if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) {
-    return res.status(409).json({ error: 'Username is already taken' });
-  }
   if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) {
     return res.status(409).json({ error: 'Email is already registered' });
   }
@@ -125,9 +131,9 @@ router.post('/signup', limitRequests(), async (req, res) => {
   const token = db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
-        'INSERT INTO users (username, password_hash, email, phone, first_name, email_verified) VALUES (?, ?, ?, ?, ?, 0)'
+        'INSERT INTO users (password_hash, email, phone, first_name, last_name, email_verified) VALUES (?, ?, ?, ?, ?, 0)'
       )
-      .run(username, hashPassword(password), email, phone, firstName);
+      .run(hashPassword(password), email, phone, firstName, lastName);
     return createVerificationToken(lastInsertRowid, 'email_verify', VERIFY_TOKEN_TTL_MINUTES);
   })();
 

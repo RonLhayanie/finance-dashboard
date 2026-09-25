@@ -5,7 +5,7 @@ import ResendVerification from '../components/ResendVerification';
 
 const FIELDS = [
   { name: 'firstName', label: 'שם פרטי', type: 'text', autoComplete: 'given-name' },
-  { name: 'username', label: 'שם משתמש', type: 'text', autoComplete: 'username' },
+  { name: 'lastName', label: 'שם משפחה', type: 'text', autoComplete: 'family-name' },
   { name: 'email', label: 'אימייל', type: 'email', autoComplete: 'email', dir: 'ltr' },
   { name: 'phone', label: 'טלפון', type: 'tel', autoComplete: 'tel', dir: 'ltr' },
   { name: 'password', label: 'סיסמה', type: 'password', autoComplete: 'new-password' },
