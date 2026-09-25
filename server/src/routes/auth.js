@@ -73,7 +73,7 @@ router.post('/login', limitRequests(), (req, res) => {
   }
 
   const user = db
-    .prepare('SELECT id, username, password_hash, email, email_verified FROM users WHERE email = ?')
+    .prepare('SELECT id, username, password_hash, email, first_name, email_verified FROM users WHERE email = ?')
     .get(email.trim().toLowerCase());
   if (!user || !verifyPassword(password, user.password_hash)) {
     recordFailure(ip);
@@ -87,7 +87,7 @@ router.post('/login', limitRequests(), (req, res) => {
   }
   const token = createSession(user.id);
   res.setHeader('Set-Cookie', sessionCookie(token));
-  res.json({ ok: true, username: user.username });
+  res.json({ ok: true, username: user.username, email: user.email, firstName: user.first_name });
 });
 
 router.post('/logout', requireAuth, (req, res) => {
@@ -254,8 +254,10 @@ router.get('/me', (req, res) => {
   const token = parseCookies(req)[COOKIE_NAME];
   const session = getSession(token);
   if (!session) return res.status(401).json({ error: 'Not authenticated' });
-  const user = db.prepare('SELECT username FROM users WHERE id = ?').get(session.userId);
-  res.json({ username: user ? user.username : null });
+  const user = db.prepare('SELECT username, email, first_name FROM users WHERE id = ?').get(session.userId);
+  // A session can outlive its user (account deleted elsewhere).
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
+  res.json({ username: user.username, email: user.email, firstName: user.first_name });
 });
 
 module.exports = router;

@@ -196,7 +196,7 @@ export default function Layout() {
               onClick={() => setConfirmLogout(true)}
               className="cursor-pointer text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)]"
             >
-              התנתקות ({user})
+              התנתקות ({user.firstName || user.email})
             </button>
           </div>
         </aside>

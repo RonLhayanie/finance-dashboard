@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
     let cancelled = false;
     getMe()
       .then((data) => {
-        if (!cancelled) setUser(data.username);
+        if (!cancelled) setUser(data);
       })
       .catch(() => {
         if (!cancelled) setUser(null);
@@ -25,8 +25,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const data = await apiLogin(email, password);
-    setUser(data.username);
+    setUser(await apiLogin(email, password));
   }, []);
 
   const logout = useCallback(async () => {
