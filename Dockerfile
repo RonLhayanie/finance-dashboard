@@ -8,19 +8,22 @@ RUN apt-get update && apt-get install -y wget gnupg ca-certificates --no-install
     && apt-get install -y google-chrome-stable --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-COPY . .
-
-# חסימת Puppeteer מלהוריד כרום שבור בעצמו
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# כפיית דגלי אבטחה ברמת מערכת ההפעלה (עוקף את מגבלות הספרייה ב-Node)
+RUN mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-bin && \
+    echo '#!/bin/bash' > /usr/bin/google-chrome-stable && \
+    echo 'exec /usr/bin/google-chrome-stable-bin --no-sandbox --disable-setuid-sandbox "$@"' >> /usr/bin/google-chrome-stable && \
+    chmod +x /usr/bin/google-chrome-stable
+
+WORKDIR /app
+COPY . .
 
 RUN npm ci --prefix client && npm run build --prefix client
 RUN npm ci --prefix server
 
 ENV NODE_ENV=production
-# כפייה על Puppeteer להשתמש בכרום המלא של מערכת ההפעלה
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 EXPOSE 3000
