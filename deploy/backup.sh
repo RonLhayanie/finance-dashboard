@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # WAL-safe SQLite backup with 14-day retention.
-# Cron (as the fable user):  15 3 * * * /opt/fable/deploy/backup.sh >> /opt/fable/backups/backup.log 2>&1
+# Needs the sqlite3 CLI. Defaults match the Railway volume layout in deploy/README.md.
 set -euo pipefail
 
-DB_PATH="${DB_PATH:-/opt/fable/data/data.db}"
-BACKUP_DIR="${BACKUP_DIR:-/opt/fable/backups}"
+DB_PATH="${DB_PATH:-/data/data.db}"
+BACKUP_DIR="${BACKUP_DIR:-/data/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 
 mkdir -p "$BACKUP_DIR"

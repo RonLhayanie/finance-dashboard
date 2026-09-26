@@ -51,7 +51,7 @@ server/
       tools.js       five read-only SQL-backed tools
       chat.js        tool-use loop
     scheduler.js     nightly cron sync
-deploy/          systemd unit and WAL-safe SQLite backup script
+deploy/          Railway deployment notes and WAL-safe SQLite backup script
 ```
 
 ### Sync and the OTP problem
@@ -144,9 +144,10 @@ cd ../server && npm start
 
 ## Deployment
 
-`deploy/` contains a systemd unit with `NoNewPrivileges`, `ProtectSystem=strict` and
-`ProtectHome`, and `backup.sh`, which uses `sqlite3 .backup` for a consistent snapshot under WAL
-mode with 14-day retention.
+The app deploys to Railway as a single service with a volume for the SQLite file; see
+`deploy/README.md` for the build/start commands, variables (including `TZ=Asia/Jerusalem`) and a
+post-deploy checklist. `deploy/backup.sh` uses `sqlite3 .backup` for a consistent snapshot under
+WAL mode with 14-day retention.
 
 ## Known limitations
 
