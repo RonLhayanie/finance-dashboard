@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import OtpModal from './OtpModal';
 import SyncErrorToast from './SyncErrorToast';
 import ConfirmModal from './ConfirmModal';
-import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
+import logo from '../assets/logo/logo-dark-bg.svg';
 
 const NAV_ITEMS = [
   { to: '/', label: 'לוח בקרה', end: true },
@@ -164,7 +164,7 @@ export default function Layout() {
           className="sticky top-0 flex h-full w-56 shrink-0 flex-col overflow-hidden p-4"
           style={{ backgroundColor: 'var(--color-surface)', borderInlineStart: '0.5px solid var(--color-border)' }}
         >
-          <img src={ledgerlyLogo} alt="Ledgerly" className="mx-auto mb-6 w-40 h-auto py-2" />
+          <img src={logo} alt="Dashboard" className="mx-auto mb-6 w-40 h-auto py-2" />
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = NAV_ICONS[item.to];

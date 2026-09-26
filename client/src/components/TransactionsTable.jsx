@@ -197,7 +197,7 @@ export default function TransactionsTable() {
     <div className="rounded-xl bg-[var(--color-surface)] p-4">
       {/* Scoped to this component's own picker instance only. */}
       <style>{`
-        .ledgerly-daypicker .rdp-day_button:hover:not(:disabled) {
+        .app-daypicker .rdp-day_button:hover:not(:disabled) {
           background-color: var(--color-surface-2);
         }
       `}</style>
@@ -240,7 +240,7 @@ export default function TransactionsTable() {
                 locale={he}
                 selected={{ from: parseISODate(from), to: parseISODate(to) }}
                 onSelect={handleRangeSelect}
-                className="ledgerly-daypicker"
+                className="app-daypicker"
                 style={dayPickerStyle}
               />
             </div>

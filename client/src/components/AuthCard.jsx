@@ -1,4 +1,4 @@
-import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
+import logo from '../assets/logo/logo-dark-bg.svg';
 
 // Same card look as the login page, for the public signup/verify pages.
 export const authInputClass =
@@ -14,7 +14,7 @@ export default function AuthCard({ title, children }) {
       />
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-surface)]/72 p-8 shadow-2xl backdrop-blur-2xl">
         <div className="mb-6 text-center">
-          <img src={ledgerlyLogo} alt="Ledgerly" className="mx-auto h-auto w-56" />
+          <img src={logo} alt="Dashboard" className="mx-auto h-auto w-56" />
           <h1 className="mt-3 text-lg font-semibold text-[var(--color-text)]">{title}</h1>
         </div>
         {children}

@@ -122,7 +122,7 @@ router.get('/export', (req, res) => {
     subscriptions: get_subscriptions({ userId }),
   };
   const date = data.exported_at.slice(0, 10);
-  res.setHeader('Content-Disposition', `attachment; filename="ledgerly-export-${date}.json"`);
+  res.setHeader('Content-Disposition', `attachment; filename="dashboard-export-${date}.json"`);
   res.json(data);
 });
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ledgerlyLogo from '../assets/logo/ledgerly-logo-dark-bg.svg';
+import logo from '../assets/logo/logo-dark-bg.svg';
 import ResendVerification from '../components/ResendVerification';
 
 const ICON_PROPS = {
@@ -205,7 +205,7 @@ export default function Login() {
         className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--color-accent)]/30 bg-[var(--color-surface)]/72 p-8 shadow-2xl backdrop-blur-2xl"
       >
         <div className="mb-8 text-center">
-          <img src={ledgerlyLogo} alt="Ledgerly" className="mx-auto w-72 h-auto" />
+          <img src={logo} alt="Dashboard" className="mx-auto w-72 h-auto" />
           <p className="mt-1 text-base text-[var(--color-text-muted)]">
             הכספים שלך, <span className="font-semibold text-[var(--color-accent)]">חכמים</span> יותר.
           </p>
