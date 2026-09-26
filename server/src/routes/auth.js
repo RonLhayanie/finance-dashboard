@@ -4,7 +4,7 @@ const { verifyPassword, hashPassword } = require('../auth/password');
 const { createVerificationToken, consumeToken, deleteTokens } = require('../db/tokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../email/email');
 const { createSession, getSession, destroySession } = require('../auth/session');
-const { requireAuth, parseCookies, COOKIE_NAME } = require('../auth/middleware');
+const { requireAuth, parseCookies, COOKIE_NAME, COOKIE_ATTRS } = require('../auth/middleware');
 
 const router = express.Router();
 
@@ -56,9 +56,7 @@ function limitRequests() {
 }
 
 function sessionCookie(token) {
-  // Secure flag omitted: app is served over the Tailscale interface (HTTP within an
-  // encrypted mesh). If Caddy/HTTPS is ever put in front, add '; Secure'.
-  return `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}`;
+  return `${COOKIE_NAME}=${token}; ${COOKIE_ATTRS}; Max-Age=${7 * 24 * 60 * 60}`;
 }
 
 router.post('/login', limitRequests(), (req, res) => {
@@ -92,7 +90,7 @@ router.post('/login', limitRequests(), (req, res) => {
 
 router.post('/logout', requireAuth, (req, res) => {
   destroySession(req.sessionToken);
-  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
+  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; ${COOKIE_ATTRS}; Max-Age=0`);
   res.json({ ok: true });
 });
 

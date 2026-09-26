@@ -1,6 +1,9 @@
 const { getSession } = require('./session');
 
 const COOKIE_NAME = 'fable_session';
+// Secure only in production: browsers drop Secure cookies on plain-http
+// localhost, which would break local dev. Railway must set NODE_ENV=production.
+const COOKIE_ATTRS = `HttpOnly; SameSite=Strict; Path=/${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
 
 function parseCookies(req) {
   const header = req.headers.cookie;
@@ -25,4 +28,4 @@ function requireAuth(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, parseCookies, COOKIE_NAME };
+module.exports = { requireAuth, parseCookies, COOKIE_NAME, COOKIE_ATTRS };

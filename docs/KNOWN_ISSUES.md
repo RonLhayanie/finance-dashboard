@@ -30,6 +30,8 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 15. **Subscriptions "last charged" date shows the UTC day** - `SubscriptionsTable.jsx` displays `last_charged.slice(0, 10)`, the UTC date of a stored UTC timestamp, so charges recorded at local midnight show one day early. Same class of bug as the one fixed for transaction dates (use `formatDay` from `client/src/utils/format.js`); not applied yet because that file has unrelated uncommitted changes.
 
+16. **Single instance only (scaling limit)** - sessions live in server memory and the database is one SQLite file, so the app supports exactly one server instance/replica. Fine at the current scale (a handful of users). Running multiple Railway replicas would need a shared session store and a database that multiple instances can use; until then, keep the service at one replica (a redeploy also logs everyone out).
+
 ## Resolved
 
 5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.

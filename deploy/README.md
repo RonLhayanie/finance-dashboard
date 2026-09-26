@@ -7,10 +7,10 @@ start commands below are set explicitly in the service settings.
 ## Before going live
 
 A Railway URL is on the public internet. The previous setup was reachable only over Tailscale
-behind a firewall, and some code still assumes that:
+behind a firewall. Keep in mind:
 
-- **Session cookie has no `Secure` flag** (`server/src/routes/auth.js`, `sessionCookie`). Railway
-  serves HTTPS, so the flag should be added before real use.
+- **`NODE_ENV=production` must be set** (see Variables): it is what turns on the session
+  cookie's `Secure` flag. Without it the cookie still works over HTTPS, just without `Secure`.
 - **Sessions are in memory** and the SQLite database is a single file: run exactly **one**
   replica, and expect every redeploy to log users out.
 
@@ -39,6 +39,7 @@ behind a firewall, and some code still assumes that:
 |---|---|---|
 | `MASTER_KEY` | yes | 64 hex chars (AES-256-GCM key for bank credentials). `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Losing it makes stored bank credentials unreadable. |
 | `DB_PATH` | yes | On the volume, e.g. `/data/data.db`. Created with its schema on first start. |
+| `NODE_ENV` | yes | `production`. Adds `Secure` to the session cookie. Leave unset locally: browsers drop `Secure` cookies on `http://localhost`. |
 | `TZ` | yes | `Asia/Jerusalem`. Month/day analytics group by SQLite `'localtime'`, which follows this; without it the container's UTC clock shifts month boundaries. |
 | `APP_URL` | yes | Public base URL, no trailing slash needed, e.g. `https://<service>.up.railway.app`. Used in verification and reset links. |
 | `RESEND_API_KEY` | yes | From resend.com/api-keys. |

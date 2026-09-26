@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db/db');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { destroyUserSessions } = require('../auth/session');
-const { COOKIE_NAME } = require('../auth/middleware');
+const { COOKIE_NAME, COOKIE_ATTRS } = require('../auth/middleware');
 const { createVerificationToken, deleteTokens } = require('../db/tokens');
 const { sendVerificationEmail } = require('../email/email');
 const { get_subscriptions } = require('../ai/tools');
@@ -140,7 +140,7 @@ router.delete('/account', (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(req.userId);
   })();
   destroyUserSessions(req.userId);
-  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
+  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; ${COOKIE_ATTRS}; Max-Age=0`);
   res.json({ ok: true });
 });
 
