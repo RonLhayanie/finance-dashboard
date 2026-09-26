@@ -9,7 +9,9 @@ import { TOOLTIP_BG, TOOLTIP_BORDER } from '../../utils/chartColors';
 const MAX_SLICES = 6;
 
 // Fixed, distinct palette assigned by slice index so categories are always
-// readable against the dark background. "אחר" (other) always stays neutral gray.
+// readable against the dark background. The long-tail bucket always stays neutral gray.
+// It is labeled "קטגוריות נוספות", not "אחר", so it never collides with the real
+// `other` category when that one ranks in the top MAX_SLICES.
 const DONUT_PALETTE = ['#7F77DD', '#1baf7a', '#378ADD', '#EF9F27', '#e2534a', '#e87ba4', '#5DCAA5', '#BA7517'];
 const OTHER_GRAY = '#888780';
 
@@ -60,10 +62,10 @@ export default function SpendingByCategory({ from, to, accountId }) {
           slug: r.key,
         }));
         if (otherTotal > 0) {
-          // "אחר" aggregates several long-tail categories beyond MAX_SLICES -
+          // This bucket aggregates several long-tail categories beyond MAX_SLICES -
           // there's no single category slug it can deep-link to, so it has
           // no slug and stays non-clickable below.
-          chartData.push({ name: 'אחר', value: otherTotal, color: OTHER_GRAY });
+          chartData.push({ name: 'קטגוריות נוספות', value: otherTotal, color: OTHER_GRAY });
         }
         setData(chartData);
       })
