@@ -26,6 +26,7 @@ router.get('/summary', (req, res) => {
     const accountId = parseAccountId(req.query.account_id);
     res.json(get_spending_summary({ from, to, groupBy, accountId, userId: req.userId }));
   } catch (err) {
+    if (err.code) throw err; // database errors -> generic 500; validation messages are safe to show
     res.status(400).json({ error: err.message });
   }
 });
@@ -37,6 +38,7 @@ router.get('/anomalies', (req, res) => {
     const accountId = parseAccountId(req.query.account_id);
     res.json(get_anomalies({ from, to, limit, accountId, userId: req.userId }));
   } catch (err) {
+    if (err.code) throw err; // database errors -> generic 500; validation messages are safe to show
     res.status(400).json({ error: err.message });
   }
 });

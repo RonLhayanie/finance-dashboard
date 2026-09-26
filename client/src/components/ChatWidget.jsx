@@ -42,6 +42,11 @@ function PlusIcon(props) {
   );
 }
 
+// No images: an AI answer (which can be steered by merchant/description text)
+// must not make the browser fetch an external URL. unwrapDisallowed keeps any
+// text around them; images have no children, so they simply disappear.
+const DISALLOWED_ELEMENTS = ['img'];
+
 const MARKDOWN_COMPONENTS = {
   h1: (props) => (
     <h3 className="mb-2 border-b border-[var(--color-border)] pb-1 text-base font-bold text-[var(--color-text)]" {...props} />
@@ -149,7 +154,9 @@ export default function ChatWidget() {
                 style={{ backgroundColor: m.role === 'user' ? 'var(--color-accent)' : 'var(--color-surface-2)' }}
               >
                 {m.role === 'assistant' ? (
-                  <ReactMarkdown components={MARKDOWN_COMPONENTS}>{m.content}</ReactMarkdown>
+                  <ReactMarkdown components={MARKDOWN_COMPONENTS} disallowedElements={DISALLOWED_ELEMENTS} unwrapDisallowed>
+                    {m.content}
+                  </ReactMarkdown>
                 ) : (
                   m.content
                 )}

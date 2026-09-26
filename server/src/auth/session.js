@@ -24,9 +24,10 @@ function destroySession(token) {
   sessions.delete(token);
 }
 
-function destroyUserSessions(userId) {
+// exceptToken keeps the caller's own session (e.g. after changing a password).
+function destroyUserSessions(userId, exceptToken) {
   for (const [token, session] of sessions) {
-    if (session.userId === userId) sessions.delete(token);
+    if (session.userId === userId && token !== exceptToken) sessions.delete(token);
   }
 }
 

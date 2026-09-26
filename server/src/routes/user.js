@@ -87,6 +87,8 @@ router.put('/profile', async (req, res) => {
     return createVerificationToken(req.userId, 'email_verify', VERIFY_TOKEN_TTL_MINUTES);
   })();
 
+  if (changingPassword) destroyUserSessions(req.userId, req.sessionToken);
+
   const response = { ok: true, profile: getProfile(req.userId) };
   if (token) {
     response.emailSent = true;

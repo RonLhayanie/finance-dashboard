@@ -3,7 +3,7 @@ const db = require('../db/db');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { createVerificationToken, consumeToken, deleteTokens } = require('../db/tokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../email/email');
-const { createSession, getSession, destroySession } = require('../auth/session');
+const { createSession, getSession, destroySession, destroyUserSessions } = require('../auth/session');
 const { requireAuth, parseCookies, COOKIE_NAME, COOKIE_ATTRS } = require('../auth/middleware');
 
 const router = express.Router();
@@ -112,6 +112,13 @@ router.post('/signup', limitRequests(), async (req, res) => {
   }
   const { password, passwordConfirm } = body;
   const email = body.email.trim().toLowerCase();
+
+  // Temporary hard stop until public signup is decided: only listed emails can
+  // register. Unset or empty means nobody can.
+  const allowed = (process.env.ALLOWED_SIGNUP_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (!allowed.includes(email)) {
+    return res.status(403).json({ error: 'Signup is by invitation only' });
+  }
   const firstName = body.firstName.trim();
   const lastName = body.lastName.trim();
   const phone = body.phone.trim();
@@ -238,6 +245,8 @@ router.post('/reset-password', limitRequests(), (req, res) => {
     }
     return r;
   })();
+
+  if (result.userId) destroyUserSessions(result.userId);
 
   if (result.error === 'expired') {
     return res.status(410).json({ error: 'Reset link has expired' });

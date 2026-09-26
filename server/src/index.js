@@ -18,6 +18,26 @@ const { requireAuth } = require('./auth/middleware');
 const { startScheduler } = require('./scheduler');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Railway puts one proxy in front of the app; without this, req.ip is the
+// proxy for every visitor and rate limits/lockouts become global. Only in
+// production: locally there's no proxy, so X-Forwarded-For would be spoofable.
+if (isProduction) app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; " +
+      "font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  );
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  if (isProduction) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
@@ -51,9 +71,13 @@ app.use((req, res, next) => {
   res.sendFile(path.join(clientDist, 'index.html'));
 });
 
+// Body-parser errors carry their own 4xx status; anything else is a server
+// error. Either way the client gets a fixed message; details stay in the log.
+const CLIENT_ERRORS = { 400: 'Invalid request body', 413: 'Request body too large' };
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: err.message });
+  const status = CLIENT_ERRORS[err.status] ? err.status : 500;
+  if (status === 500) console.error(err);
+  res.status(status).json({ error: CLIENT_ERRORS[status] || 'Internal server error' });
 });
 
 const port = process.env.PORT || 3001;

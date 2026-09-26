@@ -40,6 +40,7 @@ behind a firewall. Keep in mind:
 | `MASTER_KEY` | yes | 64 hex chars (AES-256-GCM key for bank credentials). `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Losing it makes stored bank credentials unreadable. |
 | `DB_PATH` | yes | On the volume, e.g. `/data/data.db`. Created with its schema on first start. |
 | `NODE_ENV` | yes | `production`. Adds `Secure` to the session cookie. Leave unset locally: browsers drop `Secure` cookies on `http://localhost`. |
+| `ALLOWED_SIGNUP_EMAILS` | for signup | Comma-separated emails allowed to sign up, e.g. `yossi@example.com`. Unset or empty means nobody can. Temporary gate until public signup is decided; `/signup` is also unlinked from the login page. |
 | `TZ` | yes | `Asia/Jerusalem`. Month/day analytics group by SQLite `'localtime'`, which follows this; without it the container's UTC clock shifts month boundaries. |
 | `APP_URL` | yes | Public base URL, no trailing slash needed, e.g. `https://<service>.up.railway.app`. Used in verification and reset links. |
 | `RESEND_API_KEY` | yes | From resend.com/api-keys. |

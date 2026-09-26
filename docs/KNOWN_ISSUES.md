@@ -4,15 +4,13 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 ## Open
 
-1. **Sessions not invalidated on password change/reset** - changing a password (via Settings or the forgot-password flow) does not log out other active sessions for that user. A stolen password stays usable on an already-logged-in device until the 7-day session expires naturally.
-
 2. **Email-change typo lockout** - if a user mistypes their new email in Settings, their current session keeps working, but once it ends they're locked out: login requires email_verified, verification requires clicking a link sent to the (wrong) new address, and resend-verification keeps targeting that same wrong address. No recovery path exists yet.
 
 3. **Account deletion during active bank sync not handled** - deleting an account while a scrape/sync job is running for it isn't guarded against; the sync could fail mid-write.
 
 4. **Foreign key mismatch on live DB** - `accounts` and `insights` tables in the live database predate the `ON DELETE CASCADE` rule now in schema.sql (CREATE TABLE IF NOT EXISTS never retrofits existing tables). The account-deletion route works around this by deleting those rows manually before deleting the user. A future migration should rebuild these tables with the correct cascade rule so the workaround can be removed.
 
-7. **card_payment dedup only covers one mapped card** - `card_mappings` has a single entry (`0659 -> account 17`). Yossi's cards aren't mapped, so his CAL charges aren't deduplicated against the bank aggregate line the way Ron's are.
+7. **card_payment dedup only covers one mapped card** - `card_mappings` has a single entry (`0659 -> account 17`). Yossi's cards aren't mapped, so his CAL charges aren't deduplicated against the bank aggregate line the way Ron's are. Scheduled for Yossi's onboarding (map his card's last 4 digits to his card account once his accounts have synced), not the pre-launch hardening. Note that `schema.sql` seeds `0659 -> 17`, which is wrong on a fresh database where account ids differ.
 
 8. **npm vulnerabilities** - GitHub Dependabot reports 13 on the default branch (8 high, 5 moderate) as of 2026-09-26, up from the 5 previously noted. Upstream, not yet resolved.
 
@@ -37,3 +35,5 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.
 
 6. **`other` category still includes internal money movements** - did not reproduce; resolved in 50fbc88. When investigated, `other` held 17 rows / 409 ILS of genuine spending and no internal movements: deposit principal was already categorized `internal` (excluded from analytics). The real issue was the reverse - deposit interest (~56 ILS) was also in `internal` instead of counting as income. Deterministic rules in categorize.js now send deposit principal to `internal` and deposit interest to a new `interest` category (counted as income). Bit-to-bank withdrawals were already in `transfers`, not `internal`, so they already counted as income and needed no change (see #11 for the Bit visibility limitation).
+
+1. **Sessions not invalidated on password change/reset** - resolved in the commit "Pre-launch security hardening". Changing the password in Settings now logs out every other session of that user (the current one stays), and a forgot-password reset logs out all of them.
