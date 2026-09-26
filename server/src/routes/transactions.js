@@ -38,11 +38,11 @@ router.get('/', (req, res) => {
   const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
   const params = [req.userId];
   if (from !== undefined) {
-    clauses.push('date >= ?');
+    clauses.push("date(date, 'localtime') >= ?");
     params.push(from);
   }
   if (to !== undefined) {
-    clauses.push('date <= ?');
+    clauses.push("date(date, 'localtime') <= ?");
     params.push(to);
   }
   if (category !== undefined) {

@@ -63,7 +63,7 @@ router.get('/monthly', (req, res) => {
 
   const rows = db
     .prepare(
-      `SELECT strftime('%Y-%m', date) AS month,
+      `SELECT strftime('%Y-%m', date, 'localtime') AS month,
               SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income,
               SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS expense
        FROM transactions
@@ -80,7 +80,7 @@ router.get('/monthly', (req, res) => {
 router.get('/months', (req, res) => {
   const rows = db
     .prepare(
-      `SELECT DISTINCT strftime('%Y-%m', date) AS month
+      `SELECT DISTINCT strftime('%Y-%m', date, 'localtime') AS month
        FROM transactions
        WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ?)
        ORDER BY month`

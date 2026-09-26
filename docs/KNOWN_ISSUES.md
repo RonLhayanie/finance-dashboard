@@ -28,6 +28,8 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 14. **Frontend category label map is incomplete** - `client/src/utils/categories.js` has no labels for `interest`, `internal`, or `card_payment`, unlike the server-side `category_labels` table. Harmless today because those are never shown in the category chart (excluded, or income-only), but an unknown slug renders as the raw slug, so the two maps should be synced if that changes.
 
+15. **Subscriptions "last charged" date shows the UTC day** - `SubscriptionsTable.jsx` displays `last_charged.slice(0, 10)`, the UTC date of a stored UTC timestamp, so charges recorded at local midnight show one day early. Same class of bug as the one fixed for transaction dates (use `formatDay` from `client/src/utils/format.js`); not applied yet because that file has unrelated uncommitted changes.
+
 ## Resolved
 
 5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.

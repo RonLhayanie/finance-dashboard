@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import 'react-day-picker/style.css';
 import { getTransactions } from '../api/client';
-import { formatILS } from '../utils/format';
+import { formatILS, formatDay } from '../utils/format';
 import { CATEGORIES, getCategoryLabel } from '../utils/categories';
 
 const PAGE_SIZE = 20;
@@ -318,7 +318,7 @@ export default function TransactionsTable() {
                   r.is_anomaly ? 'bg-[var(--color-warning-bg)]' : ''
                 }`}
               >
-                <td className="py-2 text-[var(--color-text-muted)]">{r.date.slice(0, 10)}</td>
+                <td className="py-2 text-[var(--color-text-muted)]">{formatDay(r.date)}</td>
                 <td className="py-2 text-[var(--color-text)]">
                   <span className="flex items-center gap-2">
                     {r.description}

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { getAccounts, resetSyncStatus, getAnomalies, getMonthlyBreakdown, getMonths, getTransactions, getSummary, getInsight } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
 import { useChatContext } from '../context/ChatContext';
 import { getProviderLabel } from '../utils/providers';
 import { getCategoryLabel } from '../utils/categories';
-import { formatILS } from '../utils/format';
+import { formatILS, formatDay } from '../utils/format';
 import SpendingByCategory from '../components/charts/SpendingByCategory';
 import MonthlyTrend from '../components/charts/MonthlyTrend';
 import ConfirmModal from '../components/ConfirmModal';
@@ -21,8 +22,10 @@ const RANGE_OPTIONS = [
 // only to pick an icon for the account tile.
 const BANK_PROVIDERS = ['leumi', 'hapoalim', 'discount'];
 
+// Local calendar date. toISOString would convert through UTC and turn local
+// midnight into the previous day; the server compares against local dates.
 function toISODate(date) {
-  return date.toISOString().slice(0, 10);
+  return format(date, 'yyyy-MM-dd');
 }
 
 function computeRange(months) {
@@ -211,7 +214,7 @@ function AnomalyStrip({ accountId, from, to }) {
               {(r.description || '').length > 30 ? `${r.description.slice(0, 30)}…` : r.description}
             </span>
             <span style={{ color: 'var(--color-expense)' }}>{formatILS(r.amount)}</span>
-            <span className="text-[var(--color-text-dim)]">{r.date.slice(0, 10)}</span>
+            <span className="text-[var(--color-text-dim)]">{formatDay(r.date)}</span>
           </span>
         ))}
         {remaining > 0 && !expanded && (
@@ -228,7 +231,7 @@ function AnomalyStrip({ accountId, from, to }) {
               <span className="text-[var(--color-text)]">{r.description}</span>
               <span className="flex items-center gap-2">
                 <span style={{ color: 'var(--color-expense)' }}>{formatILS(r.amount)}</span>
-                <span className="text-[var(--color-text-dim)]">{r.date.slice(0, 10)}</span>
+                <span className="text-[var(--color-text-dim)]">{formatDay(r.date)}</span>
                 {/* TODO: surface the real trigger reason from the backend anomaly
                     detector (analytics/anomalies.js) instead of this generic label -
                     the detector currently only flags rows via a category z-score

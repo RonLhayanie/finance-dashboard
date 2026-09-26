@@ -11,8 +11,11 @@ function getAdapter() {
   return cachedAdapter;
 }
 
+// Local calendar date (not toISOString, which converts to UTC and turns local
+// midnight into the previous day). Compared against date(date, 'localtime').
 function toISODate(d) {
-  return d.toISOString().slice(0, 10);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 // card_payment/internal are internal bookkeeping categories, excluded from
@@ -31,7 +34,7 @@ function categoryBreakdown(db, userId, fromDate, toDate) {
       `SELECT COALESCE(cl.label_he, t.category, 'אחר') AS label, SUM(-t.amount) AS total, COUNT(*) AS n
        FROM transactions t
        LEFT JOIN category_labels cl ON cl.slug = t.category
-       WHERE t.amount < 0 AND t.date >= ? AND t.date <= ? AND ${EXCLUDE_INTERNAL}
+       WHERE t.amount < 0 AND date(t.date, 'localtime') >= ? AND date(t.date, 'localtime') <= ? AND ${EXCLUDE_INTERNAL}
          AND t.${OWNED_ACCOUNTS}
        GROUP BY t.category
        ORDER BY total DESC`
@@ -56,9 +59,9 @@ function buildSummary(db, userId) {
 
   const sixMonthRows = db
     .prepare(
-      `SELECT strftime('%Y-%m', date) AS month, SUM(-amount) AS total
+      `SELECT strftime('%Y-%m', date, 'localtime') AS month, SUM(-amount) AS total
        FROM transactions
-       WHERE amount < 0 AND date >= ? AND ${EXCLUDE_INTERNAL} AND ${OWNED_ACCOUNTS}
+       WHERE amount < 0 AND date(date, 'localtime') >= ? AND ${EXCLUDE_INTERNAL} AND ${OWNED_ACCOUNTS}
        GROUP BY month`
     )
     .all(toISODate(sixMonthsAgo), userId);
@@ -67,12 +70,12 @@ function buildSummary(db, userId) {
     : 0;
 
   const anomalyCount = db
-    .prepare(`SELECT COUNT(*) AS n FROM transactions WHERE is_anomaly = 1 AND date >= ? AND date <= ? AND ${OWNED_ACCOUNTS}`)
+    .prepare(`SELECT COUNT(*) AS n FROM transactions WHERE is_anomaly = 1 AND date(date, 'localtime') >= ? AND date(date, 'localtime') <= ? AND ${OWNED_ACCOUNTS}`)
     .get(toISODate(currentMonthStart), toISODate(now), userId).n;
   const topAnomalies = db
     .prepare(
       `SELECT description, amount, date FROM transactions
-       WHERE is_anomaly = 1 AND date >= ? AND date <= ? AND ${OWNED_ACCOUNTS}
+       WHERE is_anomaly = 1 AND date(date, 'localtime') >= ? AND date(date, 'localtime') <= ? AND ${OWNED_ACCOUNTS}
        ORDER BY ABS(amount) DESC LIMIT 3`
     )
     .all(toISODate(currentMonthStart), toISODate(now), userId);

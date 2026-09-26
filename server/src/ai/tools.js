@@ -63,11 +63,11 @@ function query_transactions(args = {}) {
   const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
   const params = [userId];
   if (from !== undefined && from !== null) {
-    clauses.push('date >= ?');
+    clauses.push("date(date, 'localtime') >= ?");
     params.push(from);
   }
   if (to !== undefined && to !== null) {
-    clauses.push('date <= ?');
+    clauses.push("date(date, 'localtime') <= ?");
     params.push(to);
   }
   if (category !== undefined && category !== null) {
@@ -99,7 +99,7 @@ function query_transactions(args = {}) {
 // fragment - the raw input string is never spliced into the query.
 const GROUP_BY_SQL = {
   category: 'category',
-  month: "strftime('%Y-%m', date)",
+  month: "strftime('%Y-%m', date, 'localtime')",
 };
 
 function get_spending_summary(args = {}) {
@@ -120,11 +120,11 @@ function get_spending_summary(args = {}) {
     params.push(accountId);
   }
   if (from !== undefined && from !== null) {
-    clauses.push('date >= ?');
+    clauses.push("date(date, 'localtime') >= ?");
     params.push(from);
   }
   if (to !== undefined && to !== null) {
-    clauses.push('date <= ?');
+    clauses.push("date(date, 'localtime') <= ?");
     params.push(to);
   }
   clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
@@ -171,11 +171,11 @@ function get_anomalies(args = {}) {
     params.push(accountId);
   }
   if (from !== undefined && from !== null) {
-    clauses.push('date >= ?');
+    clauses.push("date(date, 'localtime') >= ?");
     params.push(from);
   }
   if (to !== undefined && to !== null) {
-    clauses.push('date <= ?');
+    clauses.push("date(date, 'localtime') <= ?");
     params.push(to);
   }
 
