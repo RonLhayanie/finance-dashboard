@@ -20,6 +20,10 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 8. **5 npm vulnerabilities** - upstream, documented, not yet resolved.
 
+9. **Partial or missing sync months drag the monthly average down** - the dashboard's monthly average treats every month with data as a full month. History starting mid-month (2025-09 begins on the 16th) or a month with a single stray row (2026-01: one 7 ILS row, likely a sync gap) pull the average down, so a normal month reads as further above average than it really is.
+
+10. **Which baseline percent-above-average should use is undecided** - it currently compares this month against the average of all months including the current one. For "all accounts" in 2026-09 (3,193 ILS) that gives +98%; against the average of previous months only it would be +116%, and against the previous month alone (2026-08, 1,925 ILS) +66%. Decide which basis is most useful.
+
 ## Resolved
 
 (move items here with the fix commit hash when closed)

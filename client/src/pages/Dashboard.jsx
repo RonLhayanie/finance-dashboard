@@ -249,10 +249,18 @@ function AnomalyStrip({ accountId, from, to }) {
   );
 }
 
+// Below this monthly average a percentage is noise, not a trend: a bank account
+// whose spending is almost all card_payment (excluded from analytics) averages a
+// few shekels, so one ATM withdrawal reads as +1000%.
+// A fixed ILS floor; if it ever hides a real account, make it relative instead
+// (e.g. to the all-accounts average).
+const MIN_AVG_FOR_PCT = 100;
+
 function MetricCards({ monthly }) {
   const currentMonth = monthly.length ? monthly[monthly.length - 1] : { income: 0, expense: 0 };
   const avgExpense = computeAvgExpense(monthly);
-  const pctVsAvg = avgExpense > 0 ? ((currentMonth.expense - avgExpense) / avgExpense) * 100 : 0;
+  const showPct = avgExpense >= MIN_AVG_FOR_PCT;
+  const pctVsAvg = showPct ? ((currentMonth.expense - avgExpense) / avgExpense) * 100 : 0;
   const expenseValue = useCountUp(Math.round(currentMonth.expense));
   const isAboveAvg = pctVsAvg > 0;
 
@@ -264,7 +272,7 @@ function MetricCards({ monthly }) {
       >
         <p className="text-sm text-[var(--color-text-muted)]">הוצאות החודש</p>
         <p className="mt-2 font-serif text-[34px] leading-none text-[var(--color-text)]">{formatILS(expenseValue)}</p>
-        {avgExpense > 0 && (
+        {showPct && (
           <p
             className="mt-2 flex items-center gap-1 text-sm"
             style={{ color: isAboveAvg ? 'var(--color-expense)' : 'var(--color-income)' }}
