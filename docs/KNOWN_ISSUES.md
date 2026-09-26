@@ -12,8 +12,6 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 4. **Foreign key mismatch on live DB** - `accounts` and `insights` tables in the live database predate the `ON DELETE CASCADE` rule now in schema.sql (CREATE TABLE IF NOT EXISTS never retrofits existing tables). The account-deletion route works around this by deleting those rows manually before deleting the user. A future migration should rebuild these tables with the correct cascade rule so the workaround can be removed.
 
-5. **Dashboard "% above average" figure spikes on a single account** - known calculation bug, blocks considering the product ready for real use.
-
 6. **`other` category still includes internal money movements** - self-transfers and deposit withdrawal/repayment rows aren't separated from real spending, inflating the `other` category and skewing analytics.
 
 7. **card_payment dedup only covers one mapped card** - `card_mappings` has a single entry (`0659 -> account 17`). Yossi's cards aren't mapped, so his CAL charges aren't deduplicated against the bank aggregate line the way Ron's are.
@@ -26,4 +24,4 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 ## Resolved
 
-(move items here with the fix commit hash when closed)
+5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.
