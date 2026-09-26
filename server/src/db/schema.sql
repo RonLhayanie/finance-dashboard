@@ -115,4 +115,5 @@ INSERT OR IGNORE INTO category_labels (slug, label_he) VALUES
   ('cash', 'מזומן'),
   ('card_payment', 'תשלום כרטיס'),
   ('internal', 'תנועה פנימית'),
+  ('interest', 'ריבית זכות'),
   ('other', 'אחר');

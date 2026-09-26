@@ -17,11 +17,24 @@ const CATEGORIES = [
   'other',
   'card_payment',
   'internal',
+  'interest',
 ];
 
 // Starter keyword set for common Israeli merchants (Hebrew + English). Accuracy
 // will be tuned later; the rule structure and category taxonomy are what matter now.
 const RULES = [
+  // Fixed Discount bank phrases, checked first. Deposit principal coming back is
+  // the user's own money (excluded from analytics); interest on it is income.
+  // Exact phrases on purpose: the deposit-tax rows ("תשלום מס על רווח מפיקדון",
+  // "חיוב מס בפרעון פיקדון") must not match either rule.
+  {
+    category: 'internal',
+    keywords: ['משיכה מפיקדון', 'פירעון פיקדון'],
+  },
+  {
+    category: 'interest',
+    keywords: ['רווח מפיקדון שנפרע', 'רווחים ממשיכת הפקדה', 'תשלום על יתרת זכות'],
+  },
   {
     category: 'groceries',
     keywords: [

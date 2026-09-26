@@ -22,6 +22,8 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 10. **Which baseline percent-above-average should use is undecided** - it currently compares this month against the average of all months including the current one. For "all accounts" in 2026-09 (3,193 ILS) that gives +98%; against the average of previous months only it would be +116%, and against the previous month alone (2026-08, 1,925 ILS) +66%. Decide which basis is most useful.
 
+11. **No visibility into incoming Bit payments** - the app only sees the eventual Bit-to-bank withdrawal ("...ביט משיכה לחשבון בנק", categorized `transfers` and counted as income), never the individual payments people sent to the Bit wallet. Bit income timing and detail are inferred from when the withdrawal happened, not from the original payments. A real fix needs a Bit integration, which is a separate future project.
+
 ## Resolved
 
 5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.
