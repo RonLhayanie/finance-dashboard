@@ -1,6 +1,9 @@
 {
   "name": "finance-dashboard-server",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
