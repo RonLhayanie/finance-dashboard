@@ -269,12 +269,11 @@ function AnomalyStrip({ accountId, from, to }) {
 // (e.g. to the all-accounts average).
 const MIN_AVG_FOR_PCT = 100;
 
-function MetricCards({ monthly, periodPhrase }) {
-  const currentMonth = monthly.length ? monthly[monthly.length - 1] : { income: 0, expense: 0 };
+function MetricCards({ monthly, periodPhrase, periodTotals }) {
   const avgExpense = computeAvgExpense(monthly);
   const showPct = avgExpense >= MIN_AVG_FOR_PCT;
-  const pctVsAvg = showPct ? ((currentMonth.expense - avgExpense) / avgExpense) * 100 : 0;
-  const expenseValue = useCountUp(Math.round(currentMonth.expense));
+  const pctVsAvg = showPct ? ((periodTotals.expense - avgExpense) / avgExpense) * 100 : 0;
+  const expenseValue = useCountUp(Math.round(periodTotals.expense));
   const isAboveAvg = pctVsAvg > 0;
 
   return (
@@ -302,7 +301,7 @@ function MetricCards({ monthly, periodPhrase }) {
       >
         <p className="text-sm text-[var(--color-text-muted)]">הכנסות {periodPhrase}</p>
         <p className="mt-2 text-[26px] leading-none" style={{ color: 'var(--color-income)' }}>
-          {formatILS(currentMonth.income)}
+          {formatILS(periodTotals.income)}
         </p>
       </div>
 
@@ -524,6 +523,7 @@ export default function Dashboard() {
   const [confirmResetId, setConfirmResetId] = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [months, setMonths] = useState([]);
+  const [periodTotals, setPeriodTotals] = useState({ income: 0, expense: 0 });
   const { jobs, triggerSync, refresh } = useSyncStatusContext();
 
   // selectedAccount/selectedMonth live in the URL (?account=, ?month=), not
@@ -597,6 +597,28 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, []);
+
+  // Same /analytics/monthly query the trend chart uses, just bounded to the
+  // selected-period range and summed across the (usually one) returned month
+  // row(s). Reusing getSummary's category breakdown for this instead would be
+  // wrong: a category can net mixed-sign transactions (e.g. a refund), so its
+  // total's sign doesn't reliably say income vs. expense - /monthly already
+  // classifies every row by its own sign before summing, so it doesn't have
+  // that problem.
+  useEffect(() => {
+    let cancelled = false;
+    getMonthlyBreakdown({ account_id: accountId, from: range.from, to: range.to })
+      .then((rows) => {
+        if (cancelled) return;
+        const income = rows.reduce((sum, r) => sum + r.income, 0);
+        const expense = rows.reduce((sum, r) => sum + r.expense, 0);
+        setPeriodTotals({ income, expense });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [range.from, range.to, accountId]);
 
   if (accounts === null) {
     return (
@@ -738,7 +760,7 @@ export default function Dashboard() {
 
       <AnomalyStrip accountId={accountId} from={range.from} to={range.to} />
 
-      <MetricCards monthly={monthly} periodPhrase={periodPhrase} />
+      <MetricCards monthly={monthly} periodPhrase={periodPhrase} periodTotals={periodTotals} />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.4fr_1fr]">
         <div

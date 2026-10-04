@@ -44,7 +44,10 @@ router.get('/anomalies', (req, res) => {
 });
 
 // Income vs. expense per month, for the dashboard trend chart, scoped to
-// the caller's own accounts (optionally narrowed to one of them).
+// the caller's own accounts (optionally narrowed to one of them). from/to
+// optionally narrow the underlying transactions to a date range (e.g. the
+// dashboard metric cards sum the returned rows for their selected period)
+// while still grouping by calendar month, same date filter as /summary.
 router.get('/monthly', (req, res) => {
   let accountId;
   try {
@@ -52,6 +55,7 @@ router.get('/monthly', (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
+  const { from, to } = req.query;
 
   const clauses = [
     'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
@@ -61,6 +65,14 @@ router.get('/monthly', (req, res) => {
   if (accountId !== undefined) {
     clauses.push('account_id = ?');
     params.push(accountId);
+  }
+  if (from) {
+    clauses.push("date(date, 'localtime') >= ?");
+    params.push(from);
+  }
+  if (to) {
+    clauses.push("date(date, 'localtime') <= ?");
+    params.push(to);
   }
 
   const rows = db
