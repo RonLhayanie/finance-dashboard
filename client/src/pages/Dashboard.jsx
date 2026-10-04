@@ -51,6 +51,16 @@ function formatMonthLabel(yyyymm) {
   return new Date(y, m - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 }
 
+// Phrase describing the selected period, for the metric card labels (e.g.
+// "בספטמבר 2026" or "ב-3 החודשים האחרונים"). A specific month in the URL
+// overrides the quick-range buttons, same priority as the amount's range calc.
+function formatPeriodPhrase(selectedMonth, rangeKey) {
+  if (selectedMonth !== 'all') return `ב${formatMonthLabel(selectedMonth)}`;
+  if (rangeKey === '3months') return 'ב-3 החודשים האחרונים';
+  if (rangeKey === '12months') return 'ב-12 החודשים האחרונים';
+  return `ב${formatMonthLabel(toISODate(new Date()).slice(0, 7))}`;
+}
+
 function formatRelativeDays(lastSyncAt) {
   if (!lastSyncAt) return null;
   const days = Math.floor((Date.now() - new Date(lastSyncAt).getTime()) / (1000 * 60 * 60 * 24));
@@ -259,7 +269,7 @@ function AnomalyStrip({ accountId, from, to }) {
 // (e.g. to the all-accounts average).
 const MIN_AVG_FOR_PCT = 100;
 
-function MetricCards({ monthly }) {
+function MetricCards({ monthly, periodPhrase }) {
   const currentMonth = monthly.length ? monthly[monthly.length - 1] : { income: 0, expense: 0 };
   const avgExpense = computeAvgExpense(monthly);
   const showPct = avgExpense >= MIN_AVG_FOR_PCT;
@@ -273,7 +283,7 @@ function MetricCards({ monthly }) {
         className="animate-in rounded-xl p-[18px] transition-colors hover:bg-[var(--color-surface-2)]"
         style={{ backgroundColor: 'var(--color-surface)', animationDelay: '0ms' }}
       >
-        <p className="text-sm text-[var(--color-text-muted)]">הוצאות החודש</p>
+        <p className="text-sm text-[var(--color-text-muted)]">הוצאות {periodPhrase}</p>
         <p className="mt-2 font-serif text-[34px] leading-none text-[var(--color-text)]">{formatILS(expenseValue)}</p>
         {showPct && (
           <p
@@ -290,7 +300,7 @@ function MetricCards({ monthly }) {
         className="animate-in rounded-xl p-[18px] transition-colors hover:bg-[var(--color-surface-2)]"
         style={{ backgroundColor: 'var(--color-surface)', animationDelay: '80ms' }}
       >
-        <p className="text-sm text-[var(--color-text-muted)]">הכנסות</p>
+        <p className="text-sm text-[var(--color-text-muted)]">הכנסות {periodPhrase}</p>
         <p className="mt-2 text-[26px] leading-none" style={{ color: 'var(--color-income)' }}>
           {formatILS(currentMonth.income)}
         </p>
@@ -556,6 +566,7 @@ export default function Dashboard() {
   const range = selectedMonth === 'all' ? computeRange(activeRange.months) : monthRange(selectedMonth);
   const accountId = selectedAccount === 'all' ? undefined : Number(selectedAccount);
   const avgExpense = computeAvgExpense(monthly);
+  const periodPhrase = formatPeriodPhrase(selectedMonth, rangeKey);
 
   useEffect(() => {
     let cancelled = false;
@@ -727,7 +738,7 @@ export default function Dashboard() {
 
       <AnomalyStrip accountId={accountId} from={range.from} to={range.to} />
 
-      <MetricCards monthly={monthly} />
+      <MetricCards monthly={monthly} periodPhrase={periodPhrase} />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.4fr_1fr]">
         <div
