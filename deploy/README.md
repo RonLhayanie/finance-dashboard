@@ -51,6 +51,7 @@ behind a firewall. Keep in mind:
 | `ENABLE_SCHEDULER` | no | `true` to run the nightly bank sync. |
 | `SYNC_CRON` | no | Defaults to `0 3 * * *`. |
 | `PORT` | no | Set by Railway automatically; don't override. |
+| `DEBUG_SHOW_TOKENS` | no | `true` logs raw verification/reset links to the server console, for testing before `EMAIL_FROM` has a Resend-verified domain. **Must be unset (or `false`) before this goes to real strangers** — it exposes verification tokens in logs. |
 
 ## After deploying, verify
 

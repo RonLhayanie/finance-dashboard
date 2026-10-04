@@ -16,6 +16,9 @@ function buildLink(path, token) {
 
 async function send(toEmail, subject, intro, link) {
   if (!process.env.EMAIL_FROM) throw new Error('EMAIL_FROM is not set');
+  if (process.env.DEBUG_SHOW_TOKENS === 'true') {
+    console.log(`[DEBUG] Verification token for ${toEmail}: ${link}`);
+  }
   // Resend returns API errors as { error } instead of throwing.
   const { data, error } = await getClient().emails.send({
     from: process.env.EMAIL_FROM,
