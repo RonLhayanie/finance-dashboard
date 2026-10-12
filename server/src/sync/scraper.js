@@ -76,6 +76,8 @@ async function runScrape({ provider, credentials, startDate, otpRetriever }) {
     throw new Error(`Scrape failed [${result.errorType}]: ${result.errorMessage}`);
   }
 
+  if (process.env.DEBUG_SHOW_TOKENS === 'true') console.log('RAW SCRAPE ACCOUNTS:', JSON.stringify((result.accounts || []).map(({ txns, ...rest }) => ({ ...rest, txnCount: txns?.length }))));
+
   const accounts = (result.accounts || []).map((account) => ({
     accountNumber: account.accountNumber,
     txns: account.txns
