@@ -59,7 +59,7 @@ router.get('/monthly', (req, res) => {
 
   const clauses = [
     'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
-    "(category IS NULL OR category NOT IN ('card_payment', 'internal'))",
+    "(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))",
   ];
   const params = [req.userId];
   if (accountId !== undefined) {

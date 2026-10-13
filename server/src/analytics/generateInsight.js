@@ -18,9 +18,9 @@ function toISODate(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-// card_payment/internal are internal bookkeeping categories, excluded from
+// card_payment/internal/review are bookkeeping/unreviewed categories, excluded from
 // spending analytics everywhere else in this codebase - same here.
-const EXCLUDE_INTERNAL = "(category IS NULL OR category NOT IN ('card_payment', 'internal'))";
+const EXCLUDE_INTERNAL = "(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))";
 
 // Every query below is scoped to userId's own accounts via this subquery -
 // generateInsight is called once per synced account (see sync/engine.js),

@@ -127,7 +127,7 @@ function get_spending_summary(args = {}) {
     clauses.push("date(date, 'localtime') <= ?");
     params.push(to);
   }
-  clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal'))");
+  clauses.push("(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))");
   const where = `WHERE ${clauses.join(' AND ')}`;
 
   const sql = `
@@ -163,7 +163,7 @@ function get_anomalies(args = {}) {
   const clauses = [
     'is_anomaly = 1',
     'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
-    "(category IS NULL OR category NOT IN ('card_payment', 'internal'))",
+    "(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))",
   ];
   const params = [userId];
   if (accountId !== undefined && accountId !== null) {
