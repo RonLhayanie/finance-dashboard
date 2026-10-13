@@ -18,11 +18,20 @@ const CATEGORIES = [
   'card_payment',
   'internal',
   'interest',
+  'card_purchase',
+  'review',
 ];
 
 // Starter keyword set for common Israeli merchants (Hebrew + English). Accuracy
 // will be tuned later; the rule structure and category taxonomy are what matter now.
 const RULES = [
+  // Mizrahi phrasings, checked first: the 'bit'/'ביט' keyword under 'transfers'
+  // substring-matches 'דביט' (debit). Neither phrase names a merchant, and
+  // 'other' would send them to the AI pass and into the globally shared
+  // merchant_categories cache, so they get their own buckets. 'review' is
+  // ambiguous branch counter activity (deposit/withdrawal/transfer).
+  { category: 'card_purchase', keywords: ['רכישה בכרטיס דביט'] },
+  { category: 'review', keywords: ['פעילות בקופת סניף'] },
   // Fixed Discount bank phrases, checked first. Deposit principal coming back is
   // the user's own money (excluded from analytics); interest on it is income.
   // Exact phrases on purpose: the deposit-tax rows ("תשלום מס על רווח מפיקדון",
