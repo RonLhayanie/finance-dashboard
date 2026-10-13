@@ -131,7 +131,11 @@ function get_spending_summary(args = {}) {
   const where = `WHERE ${clauses.join(' AND ')}`;
 
   const sql = `
-    SELECT ${groupExpr} AS group_key, SUM(amount) AS total, COUNT(*) AS count
+    SELECT ${groupExpr} AS group_key,
+           SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS total,
+           SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income,
+           SUM(amount) AS net,
+           COUNT(*) AS count
     FROM transactions
     ${where}
     GROUP BY ${groupExpr}
@@ -208,7 +212,7 @@ const TOOLS = [
   },
   {
     name: 'get_spending_summary',
-    description: 'Get total spend and transaction counts grouped by category or by month.',
+    description: 'Get spending per category or month: total is gross spend (sum of outgoing amounts only, negative), income is the sum of incoming amounts, net is both combined, count is all transactions.',
     parameters: {
       type: 'object',
       properties: {

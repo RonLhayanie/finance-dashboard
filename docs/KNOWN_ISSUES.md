@@ -22,8 +22,6 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 
 12. **Category chart slices are keyed by label** - `SpendingByCategory.jsx` renders slices with `key={entry.name}` (the display label). Two slices with the same label get duplicate React keys, which can cause render glitches when the data changes. The one known collision (the long-tail bucket also being called "אחר") was fixed by renaming the bucket to "קטגוריות נוספות", but keying by category slug would rule it out entirely.
 
-13. **Category chart nets each category's total** - the chart takes each category's net sum and only shows categories that come out negative. A category with both spending and income can show a positive net and disappear from the spending chart even though it contains real spending: `transfers` holds Bit payments made by card (outgoing) and Bit-to-bank withdrawals (incoming), and the incoming side is larger. In 2026-09 this hid 110 ILS of card Bit payments. Refunds shrink a category's slice the same way (e.g. `shopping`).
-
 14. **Frontend category label map is incomplete** - `client/src/utils/categories.js` has no labels for `interest`, `internal`, or `card_payment`, unlike the server-side `category_labels` table. Harmless today because those are never shown in the category chart (excluded, or income-only), but an unknown slug renders as the raw slug, so the two maps should be synced if that changes.
 
 15. **Subscriptions "last charged" date shows the UTC day** - `SubscriptionsTable.jsx` displays `last_charged.slice(0, 10)`, the UTC date of a stored UTC timestamp, so charges recorded at local midnight show one day early. Same class of bug as the one fixed for transaction dates (use `formatDay` from `client/src/utils/format.js`); not applied yet because that file has unrelated uncommitted changes.
@@ -31,6 +29,8 @@ Tracked bugs and technical debt, deferred intentionally. Update this file whenev
 16. **Single instance only (scaling limit)** - sessions live in server memory and the database is one SQLite file, so the app supports exactly one server instance/replica. Fine at the current scale (a handful of users). Running multiple Railway replicas would need a shared session store and a database that multiple instances can use; until then, keep the service at one replica (a redeploy also logs everyone out).
 
 ## Resolved
+
+13. **Category chart nets each category's total** - resolved in the commit "change category chart from net to gross expense totals". `get_spending_summary` now returns `total` as gross expense (sum of negative amounts only), plus `income` (sum of positive amounts) and `net`, so the pie chart no longer hides categories like `transfers` or shrinks `shopping` when credits offset debits. Original problem: the chart took each category's net sum and only showed negative ones, so a category with both outgoing and larger incoming amounts disappeared even though it held real spending.
 
 5. **Dashboard "% above average" figure spikes on a single account** - fixed in 208d1f3. Cause: a near-zero baseline (a bank account whose spending is almost all excluded card_payment rows averaged a few shekels, so one ATM withdrawal showed as +1076%). The percentage is now hidden when the monthly average is below 100 ILS.
 
