@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAccounts, addAccount, deleteAccount, resetSyncStatus } from '../api/client';
+import { getAccounts, addAccount, deleteAccount, resetSyncStatus, toggleAccountExclusion } from '../api/client';
 import { useSyncStatusContext } from '../context/SyncStatusContext';
 import { PROVIDERS, FIELD_LABELS, getProviderFields, getProviderLabel } from '../utils/providers';
 import ConfirmModal from '../components/ConfirmModal';
@@ -155,6 +155,15 @@ export default function Accounts() {
     }
   }
 
+  async function handleToggleExclusion(id) {
+    try {
+      await toggleAccountExclusion(id);
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   function handleDelete(id) {
     setConfirmState({ type: 'delete', accountId: id });
   }
@@ -215,7 +224,7 @@ export default function Accounts() {
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg p-3 transition-colors hover:bg-[var(--color-border)]"
                   style={{ backgroundColor: 'var(--color-surface-2)' }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-3 ${a.excluded_from_totals ? 'opacity-60' : ''}`}>
                     <div
                       className="flex h-9 w-9 items-center justify-center rounded-lg"
                       style={{ backgroundColor: 'var(--color-accent-bg)', color: 'var(--color-accent)' }}
@@ -223,7 +232,14 @@ export default function Accounts() {
                       <Icon />
                     </div>
                     <div>
-                      <p className="text-sm text-[var(--color-text)]">{a.display_name}</p>
+                      <p className="text-sm text-[var(--color-text)]">
+                        {a.display_name}
+                        {a.excluded_from_totals ? (
+                          <span className="ms-2 rounded-full border px-2 py-0.5 text-xs text-[var(--color-text-dim)]" style={{ borderColor: 'var(--color-border)' }}>
+                            לא נכלל בחישובים
+                          </span>
+                        ) : null}
+                      </p>
                       <p className="text-xs text-[var(--color-text-dim)]">{getProviderLabel(a.provider)}</p>
                       <p className="mt-1 flex items-center gap-1.5 text-xs">
                         <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: status.dot }} />
@@ -250,6 +266,14 @@ export default function Accounts() {
                         {resettingId === a.id ? 'מאפס...' : 'איפוס סנכרון תקוע'}
                       </button>
                     )}
+                    <button
+                      onClick={() => handleToggleExclusion(a.id)}
+                      title="חשבון שלא נכלל ממשיך להסתנכרן, אבל לא נספר בסיכומים, בגרפים ובתשובות ה-AI"
+                      className="rounded-lg border px-3 py-1.5 text-sm text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-border)]"
+                      style={{ borderColor: 'var(--color-border)' }}
+                    >
+                      {a.excluded_from_totals ? 'הכלל בחישובים' : 'לא לכלול בחישובים'}
+                    </button>
                     <button
                       onClick={() => handleDelete(a.id)}
                       className={`rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--color-expense)] transition-colors hover:bg-[var(--color-expense-bg)] ${

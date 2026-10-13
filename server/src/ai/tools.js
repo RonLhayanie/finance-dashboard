@@ -32,7 +32,7 @@ function requireUserId(userId) {
 
 // accountId is optional and additive on top of the userId scope above, never
 // a replacement for it - the base clause is always
-// `account_id IN (SELECT id FROM accounts WHERE user_id = ?)`, and this just
+// `account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)`, and this just
 // ANDs a further `account_id = ?` restriction. An accountId that isn't one
 // of the caller's own accounts is never a separate error case: it's already
 // excluded by the userId subquery, so the combined result is just empty.
@@ -60,7 +60,7 @@ function query_transactions(args = {}) {
     throw new Error('maxAmount must be a number');
   }
 
-  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
+  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)'];
   const params = [userId];
   if (from !== undefined && from !== null) {
     clauses.push("date(date, 'localtime') >= ?");
@@ -113,7 +113,7 @@ function get_spending_summary(args = {}) {
   }
   const groupExpr = GROUP_BY_SQL[groupBy];
 
-  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ?)'];
+  const clauses = ['account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)'];
   const params = [userId];
   if (accountId !== undefined && accountId !== null) {
     clauses.push('account_id = ?');
@@ -151,7 +151,7 @@ function get_subscriptions(args = {}) {
     .prepare(
       `SELECT account_id, merchant, amount, frequency, last_charged, status
        FROM subscriptions
-       WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ?)
+       WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)
        ORDER BY status, merchant`
     )
     .all(userId);
@@ -166,7 +166,7 @@ function get_anomalies(args = {}) {
 
   const clauses = [
     'is_anomaly = 1',
-    'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
+    'account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)',
     "(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))",
   ];
   const params = [userId];

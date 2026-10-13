@@ -36,6 +36,7 @@ function toQuery(params = {}) {
 export const getAccounts = () => request('/accounts');
 export const addAccount = (account) => request('/accounts', { method: 'POST', body: account });
 export const deleteAccount = (id) => request(`/accounts/${id}`, { method: 'DELETE' });
+export const toggleAccountExclusion = (id) => request(`/accounts/${id}/toggle-exclusion`, { method: 'PATCH' });
 
 // Sync
 export const startSync = (accountId) => request(`/sync/${accountId}`, { method: 'POST' });

@@ -24,6 +24,11 @@ for (const [name, definition] of [
   if (!userColumns.includes(name)) db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
 }
 
+const accountColumns = db.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name);
+if (!accountColumns.includes('excluded_from_totals')) {
+  db.exec('ALTER TABLE accounts ADD COLUMN excluded_from_totals INTEGER NOT NULL DEFAULT 0');
+}
+
 // ALTER TABLE can't change NOT NULL/UNIQUE, so older databases (username NOT
 // NULL UNIQUE, email nullable) get users rebuilt once to match schema.sql.
 // Fails and rolls back if any row has no email. Foreign keys must be off to

@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   const accounts = db
-    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE user_id = ? ORDER BY id')
+    .prepare('SELECT id, provider, display_name, last_sync_at, created_at, excluded_from_totals FROM accounts WHERE user_id = ? ORDER BY id')
     .all(req.userId);
   res.json(accounts);
 });
@@ -45,7 +45,7 @@ router.post('/', (req, res) => {
     .run(req.userId, provider, displayName.trim(), encrypted, iv, tag);
 
   const account = db
-    .prepare('SELECT id, provider, display_name, last_sync_at, created_at FROM accounts WHERE id = ? AND user_id = ?')
+    .prepare('SELECT id, provider, display_name, last_sync_at, created_at, excluded_from_totals FROM accounts WHERE id = ? AND user_id = ?')
     .get(insert.lastInsertRowid, req.userId);
 
   // Fire-and-forget: the first sync doubles as the connection validation. If
@@ -59,6 +59,17 @@ router.post('/', (req, res) => {
   }
 
   res.status(201).json(account);
+});
+
+// Flips whether the account counts toward totals, charts, AI answers and
+// insights. Syncing and the raw transaction list are unaffected.
+router.patch('/:id/toggle-exclusion', (req, res) => {
+  const id = Number(req.params.id);
+  const result = Number.isInteger(id)
+    ? db.prepare('UPDATE accounts SET excluded_from_totals = 1 - excluded_from_totals WHERE id = ? AND user_id = ?').run(id, req.userId)
+    : { changes: 0 };
+  if (!result.changes) return res.status(404).json({ error: `Account not found: ${req.params.id}` });
+  res.json(db.prepare('SELECT id, excluded_from_totals FROM accounts WHERE id = ?').get(id));
 });
 
 router.delete('/:id', (req, res) => {

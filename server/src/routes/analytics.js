@@ -58,7 +58,7 @@ router.get('/monthly', (req, res) => {
   const { from, to } = req.query;
 
   const clauses = [
-    'account_id IN (SELECT id FROM accounts WHERE user_id = ?)',
+    'account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)',
     "(category IS NULL OR category NOT IN ('card_payment', 'internal', 'review'))",
   ];
   const params = [req.userId];
@@ -96,7 +96,7 @@ router.get('/months', (req, res) => {
     .prepare(
       `SELECT DISTINCT strftime('%Y-%m', date, 'localtime') AS month
        FROM transactions
-       WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ?)
+       WHERE account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)
        ORDER BY month`
     )
     .all(req.userId);

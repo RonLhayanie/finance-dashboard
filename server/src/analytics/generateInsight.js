@@ -26,7 +26,7 @@ const EXCLUDE_INTERNAL = "(category IS NULL OR category NOT IN ('card_payment', 
 // generateInsight is called once per synced account (see sync/engine.js),
 // always with that account's owner's userId, so the resulting insight only
 // ever describes one user's own spending.
-const OWNED_ACCOUNTS = 'account_id IN (SELECT id FROM accounts WHERE user_id = ?)';
+const OWNED_ACCOUNTS = 'account_id IN (SELECT id FROM accounts WHERE user_id = ? AND excluded_from_totals = 0)';
 
 function categoryBreakdown(db, userId, fromDate, toDate) {
   return db

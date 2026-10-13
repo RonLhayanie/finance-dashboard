@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   credentials_iv TEXT NOT NULL,
   credentials_tag TEXT NOT NULL,
   last_sync_at TEXT,
+  excluded_from_totals INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
