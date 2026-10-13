@@ -8,6 +8,7 @@ const PROVIDER_TO_COMPANY = {
   max: CompanyTypes.max,
   isracard: CompanyTypes.isracard,
   visaCal: CompanyTypes.visaCal,
+  mizrahi: CompanyTypes.mizrahi,
 };
 
 function twelveMonthsAgo() {

@@ -12,7 +12,7 @@ const DEFAULT_PROVIDER = PROVIDERS[0].value;
 
 // Providers settled through a bank account vs. a standalone card issuer - used
 // only to pick an icon for the account tile.
-const BANK_PROVIDERS = ['leumi', 'hapoalim', 'discount'];
+const BANK_PROVIDERS = ['leumi', 'mizrahi', 'hapoalim', 'discount'];
 
 function formatRelativeTime(lastSyncAt) {
   if (!lastSyncAt) return null;

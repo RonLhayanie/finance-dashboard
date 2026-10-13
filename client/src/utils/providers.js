@@ -11,6 +11,7 @@ export const FIELD_LABELS = {
 // fields must match the library's actual required login fields for that provider.
 export const PROVIDERS = [
   { value: 'leumi', label: 'בנק לאומי', fields: ['username', 'password'] },
+  { value: 'mizrahi', label: 'בנק מזרחי טפחות', fields: ['username', 'password'] },
   { value: 'hapoalim', label: 'בנק הפועלים', fields: ['userCode', 'password'] },
   { value: 'discount', label: 'בנק דיסקונט', fields: ['id', 'num', 'password'] },
   { value: 'max', label: 'מקס (Max)', fields: ['username', 'password'] },
